@@ -105,6 +105,14 @@
     </developer>
   </developers>
   <properties>
+
+   <!--Added by Ella-->
+  <properties>
+    <sonar.organization>verzaelisa</sonar.organization>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+  </properties>
+  <!--End-->
+
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <javac.target>1.8</javac.target>
