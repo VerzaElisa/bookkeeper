@@ -1,4 +1,4 @@
-name: SonarCloud
+name: bookkeeper-build
 on:
   push:
     branches:
