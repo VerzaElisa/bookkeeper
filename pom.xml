@@ -71,6 +71,8 @@
     <module>tests</module>
     <module>native-io</module>
     <module>testtools</module>
+    <!--Added by ella-->
+    <module>jacoco-coverage</module>
   </modules>
   <mailingLists>
     <mailingList>
@@ -698,6 +700,7 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${junit.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -901,7 +904,7 @@
         <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
-          <version>3.9.1.2184</version>
+          <version>3.9.1</version>
         </plugin>
         <!--End-->
         <plugin>
