@@ -9,10 +9,10 @@
     <artifactId>bookkeeper</artifactId>
   </parent>
 
-  <artifactId>jacoco-coverage</artifactId>
+  <artifactId>jacoverage</artifactId>
 
   <properties>
-    <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../tests/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+    <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../jacoverage/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
   <dependencies>
@@ -23,7 +23,7 @@
     </dependency>
   </dependencies>
 
-  <name>jacoco-coverage</name>
+  <name>Jacoco-coverage</name>
 
 
   <build>

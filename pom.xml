@@ -73,6 +73,7 @@
     <module>testtools</module>
     <!--Added by ella-->
     <module>jacoco-coverage</module>
+    <!--end-->
   </modules>
   <mailingLists>
     <mailingList>
@@ -113,8 +114,6 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
-    <sonar.organization>verzaelisa</sonar.organization>
-    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
   <!--End-->
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
