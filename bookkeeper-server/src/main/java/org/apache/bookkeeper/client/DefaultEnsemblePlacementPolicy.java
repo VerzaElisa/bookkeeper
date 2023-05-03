@@ -19,6 +19,7 @@ package org.apache.bookkeeper.client;
 
 import io.netty.util.HashedWheelTimer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -77,11 +78,11 @@ public class DefaultEnsemblePlacementPolicy implements EnsemblePlacementPolicy {
         } finally {
             rwLock.readLock().unlock();
         }
-
         if (isWeighted) {
             // hold the readlock while selecting bookies. We don't want the list of bookies
             // changing while we are creating the ensemble
             rwLock.readLock().lock();
+
             try {
                 if (CollectionUtils.subtract(allBookies, excludeBookies).size() < ensembleSize) {
                     throw new BKNotEnoughBookiesException();
@@ -102,12 +103,16 @@ public class DefaultEnsemblePlacementPolicy implements EnsemblePlacementPolicy {
                 rwLock.readLock().unlock();
             }
         } else {
+            System.out.println(allBookies.toString());
+
             Collections.shuffle(allBookies);
             for (BookieId bookie : allBookies) {
                 if (excludeBookies.contains(bookie)) {
+                    System.out.println("escluso"+bookie);
                     continue;
                 }
                 newBookies.add(bookie);
+                System.out.println(ensembleSize);
                 --ensembleSize;
                 if (ensembleSize == 0) {
                     return PlacementResult.of(newBookies,

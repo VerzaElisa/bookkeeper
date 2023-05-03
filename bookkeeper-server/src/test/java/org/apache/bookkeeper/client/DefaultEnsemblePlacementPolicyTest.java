@@ -1,8 +1,10 @@
 package org.apache.bookkeeper.client;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.apache.bookkeeper.client.BKException.BKNotEnoughBookiesException;
 import org.apache.bookkeeper.client.EnsemblePlacementPolicy.PlacementPolicyAdherence;
 import org.apache.bookkeeper.client.EnsemblePlacementPolicy.PlacementResult;
@@ -42,129 +44,86 @@ public class DefaultEnsemblePlacementPolicyTest {
     private int ensembleSize;
     private int quorumSize; 
     private int ackQuorumSize;
-    private Map<String, byte[]> customMetadata;
-    static Map<String, byte[]> paramMetadata = new HashMap<String, byte[]>();
-    private int excludeBookies;
-    static Set<BookieId> paramExclude;
-    private PlacementResult<List<BookieId>> ret;
-    private PlacementPolicyAdherence retPolicy;
-    private ArrayList<BookieId> newBookies;
-    private boolean isWeighted;
-    private boolean fill;
-    private int knownBookies;
+    private static Map<String, byte[]> customMetadata = new HashMap<String, byte[]>();
+    private String excludeBookies;
+    private String knownBookies; 
+    private String metadata;
+    static Set<BookieId> paramExclude = new HashSet<BookieId>();
+    private String throwEx;
+    private PlacementPolicyAdherence ppa;
     private DefaultEnsemblePlacementPolicy dEpp;
 
-
-    @Mock
-    Optional<DNSToSwitchMapping> optionalDnsResolver;
-    @Mock
-    HashedWheelTimer hashedWheelTime;
-    @Mock
-    FeatureProvider featureProvide;
-    @Mock
-    StatsLogger statsLogger;
-    @Mock
-    BookieAddressResolver bookieAddressResolver;
 
     @Parameters
     public static Collection<Object[]> getTestParameters(){
         return Arrays.asList(new Object[][]{     
-            {0, 0, 0,  paramMetadata, 3, 5, false, false}, //Entro nel primo return perchè ensembleSize è 0
-            {10, 0, 0,  paramMetadata, 3, 5, true, true}, //Entro in isWeighted e nell'if successivo perchè sottrazione tra allBookies e excludeBookies è minore di ensembleSize
-            {10, 0, 0,  paramMetadata, 30, 50, true, true}, //Entro in isWeighted e va a buon fine perchè sottrazione tra allBookies e excludeBookies è maggiore di ensembleSize e knownBookies è pieno
-            {10, 0, 0,  paramMetadata, 30, 50, true, false}, //Entro in isWeighted e ho throw perchè knownBookies è vuoto
-            {10, 0, 0,  paramMetadata, 30, 50, false, true}, //Entro nell'else e va a buon fine perchè knownBookies è pieno
-            {10, 0, 0,  paramMetadata, 30, 50, false, false}, //Entro nell'else e ho throw perchè knownBookies è vuoto
-        });
+//       ensembleSize | quorumSize | ackQuorumSize | customMetadata | excludeBookies      | knownBookies                                   | throwEx                       | placementPolicyAdherence
+        {4            , 1          , 1             , "meta value"   , "bookie02 bookie03" , "bookie01 bookie02 bookie03 bookie04 bookie05" , "BKNotEnoughBookiesException" , null},
+        {0            , 0          , 0             , "meta value"   , ""                  , "bookie01 bookie02 bookie03 bookie04 bookie05" , ""                            , PlacementPolicyAdherence.FAIL},
+//      {-1           , -1         , -1            , "meta value"   , ""                  , "bookie01 bookie02 bookie03 bookie04 bookie05" , ""                            , PlacementPolicyAdherence.FAIL},
+//      {2            , 3          , 1             , "meta value"   , ""                  , "bookie01 bookie02 bookie03 bookie04 bookie05" , ""                            , PlacementPolicyAdherence.FAIL},
+//      {2            , 1          , 3             , "meta value"   , ""                  , "bookie01 bookie02 bookie03 bookie04 bookie05" , ""                            , PlacementPolicyAdherence.FAIL},
+        {4            , 3          , 2             , " "             , "bookie05"         , "bookie01 bookie02 bookie03 bookie04 bookie05" , ""                            , PlacementPolicyAdherence.MEETS_STRICT},
+        {4            , 3          , 2             , null           , "bookie05"          , "bookie01 bookie02 bookie03 bookie04 bookie05" , ""                            , PlacementPolicyAdherence.MEETS_STRICT},
+
+    });
     }
 
     public DefaultEnsemblePlacementPolicyTest(int ensembleSize, int quorumSize, int ackQuorumSize,
-        Map<String, byte[]> customMetadata, int knownBookies, int excludeBookies, boolean isWeighted, boolean fill){
+        String metadata, String excludeBookies, String knownBookies, String throwEx, PlacementPolicyAdherence ppa){
         this.ensembleSize = ensembleSize;
         this.quorumSize = quorumSize; 
         this.ackQuorumSize = ackQuorumSize;
-        this.customMetadata = customMetadata;
+        this.metadata = metadata;
         this.excludeBookies = excludeBookies;
-        this.isWeighted = isWeighted;
         this.knownBookies = knownBookies;
-        this.fill = fill;
+        this.throwEx = throwEx;
+        this.ppa = ppa;
     }
-
 
     @Before
     public void newEnsembleSetUp() throws BKNotEnoughBookiesException, UnknownHostException{
-        paramMetadata.put("meta1", "value1".getBytes());
-        dEpp = new DefaultEnsemblePlacementPolicy();
-        paramExclude = createBookieIds(excludeBookies);
+        Set<BookieId> toWrite = new HashSet<BookieId>();
+        Set<BookieId> toRead = new HashSet<BookieId>();
 
-        if(ensembleSize<=0){
-            ret = dEpp.newEnsemble(ensembleSize, quorumSize, ackQuorumSize, customMetadata, paramExclude);
-            retPolicy = ret.isAdheringToPolicy();
-            newBookies = new ArrayList<BookieId>(ensembleSize);
+        dEpp = new DefaultEnsemblePlacementPolicy();
+        System.out.println("qui");
+        //Vengono inseriti i known bookies
+        String[] bookie = knownBookies.split(" ");
+        for(String i : bookie){
+            toWrite.add(BookieId.parse(i));
         }
-        else if(isWeighted){
-            setIsWeighted();
+
+        dEpp.onClusterChanged(toWrite, toRead);
+
+        //Si crea il set di bookie da escludere
+        if(excludeBookies!=""){
+            String[] exBookie = excludeBookies.split(" ");
+            for(String i : exBookie){
+                paramExclude.add(BookieId.parse(i));
+            }
         }
+        //Si crea la map per i custom metadata
+        if(metadata!=" " && metadata!=null){
+            String[] meta = metadata.split(" ");
+            customMetadata.put(meta[0], meta[1].getBytes());
+        }
+
+    }
+
+    @After
+    public void newEnsembleClose(){
+        paramExclude = new HashSet<BookieId>();
     }
 
     @Test
     public void newEnsembleTest() throws UnknownHostException, BKNotEnoughBookiesException{
-        if(ensembleSize<=0){
-            assertEquals(1, retPolicy.getNumVal());
-            assertEquals(newBookies, ret.getResult());
-        }
-        else if(isWeighted & ensembleSize > knownBookies || !fill){
-            Assert.assertThrows(BKNotEnoughBookiesException.class, () -> dEpp.newEnsemble(ensembleSize, quorumSize, ackQuorumSize, customMetadata, paramExclude));
-        }
-        else{
-            dEpp.onClusterChanged(createBookieIds(knownBookies), createBookieIds(1));
-            ret = dEpp.newEnsemble(ensembleSize, quorumSize, ackQuorumSize, customMetadata, paramExclude);
-            retPolicy = ret.isAdheringToPolicy();
-            assertEquals(5, retPolicy.getNumVal());
-            assertEquals(ensembleSize, ret.getResult().size());
-            assertEquals(true, isUnique(ret.getResult()));
+        try{
+            PlacementResult<List<BookieId>> ret = dEpp.newEnsemble(ensembleSize, quorumSize, ackQuorumSize, customMetadata, paramExclude);
+            Assert.assertEquals(ppa, ret.getAdheringToPolicy());
+        }catch(Exception e){
+            Assert.assertEquals(throwEx, e.getClass().getSimpleName());
         }
     }
-    public boolean isUnique(List<BookieId> biList){
-        for(BookieId bi : paramExclude){
-            if(biList.contains(bi)){
-                return false;
-            }
-        }
-        Set<BookieId> unique = new HashSet<>(biList);
-        if(unique.size()<biList.size()){
-            return false;
-        }
-        return true;
-    }
-
-    public void setIsWeighted(){
-        ClientConfiguration conf = new ClientConfiguration();
-        conf.setDiskWeightBasedPlacementEnabled(isWeighted);
-        dEpp.initialize(conf, optionalDnsResolver, hashedWheelTime, featureProvide, statsLogger, bookieAddressResolver);
-    }
-
-    public Set<BookieId> createBookieIds(int num) throws UnknownHostException{
-        Set<BookieId> toRet = new HashSet<BookieId>();
-        for(int i = 0; i<num; i++){
-            toRet.add(BookieId.parse(randomStr()));
-        }
-        return toRet;
-    }
-
-    public String randomStr() {
-        int leftLimit = 97; // letter 'a'
-        int rightLimit = 122; // letter 'z'
-        int targetStringLength = 7;
-        Random random = new Random();
-        StringBuilder buffer = new StringBuilder(targetStringLength);
-        for (int i = 0; i < targetStringLength; i++) {
-            int randomLimitedInt = leftLimit + (int) 
-              (random.nextFloat() * (rightLimit - leftLimit + 1));
-            buffer.append((char) randomLimitedInt);
-        }
-        return buffer.toString();
-    }
-
 
 }
