@@ -103,16 +103,12 @@ public class DefaultEnsemblePlacementPolicy implements EnsemblePlacementPolicy {
                 rwLock.readLock().unlock();
             }
         } else {
-            System.out.println(allBookies.toString());
-
             Collections.shuffle(allBookies);
             for (BookieId bookie : allBookies) {
                 if (excludeBookies.contains(bookie)) {
-                    System.out.println("escluso"+bookie);
                     continue;
                 }
                 newBookies.add(bookie);
-                System.out.println(ensembleSize);
                 --ensembleSize;
                 if (ensembleSize == 0) {
                     return PlacementResult.of(newBookies,
