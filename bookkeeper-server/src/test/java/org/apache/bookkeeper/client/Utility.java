@@ -10,7 +10,9 @@ public class Utility {
     
     public static Set<BookieId> parser(String toParse){
         Set<BookieId> parsed = new HashSet<BookieId>();
-
+        if(toParse.equals("")){
+            return parsed;
+        }
         String[] bookie = toParse.split(" ");
         for(String i : bookie){
             parsed.add(BookieId.parse(i));

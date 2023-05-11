@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.lang.reflect.Field;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -81,14 +82,16 @@ public class NewEnsembleTest {
     }
 
     @Before
-    public void newEnsembleSetUp() throws BKNotEnoughBookiesException, UnknownHostException{
-        Set<BookieId> toRead = new HashSet<BookieId>();
+    public void newEnsembleSetUp() throws BKNotEnoughBookiesException, UnknownHostException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException{
 
         dEpp = new DefaultEnsemblePlacementPolicy();
         //Vengono inseriti i known bookies
-        Set<BookieId> toWrite = Utility.parser(knownBookies);
-        dEpp.onClusterChanged(toWrite, toRead);
+        Set<BookieId> oldBookies = Utility.parser(knownBookies);
 
+        Field privateField = dEpp.getClass().getDeclaredField("knownBookies");
+        privateField.setAccessible(true);
+        privateField.set(dEpp, oldBookies);        
+        
         //Si crea il set di bookie da escludere
         if(excludeBookies!=""){
             paramExclude = Utility.parser(excludeBookies);

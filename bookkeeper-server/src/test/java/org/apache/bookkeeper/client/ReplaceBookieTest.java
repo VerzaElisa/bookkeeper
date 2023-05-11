@@ -21,6 +21,7 @@ import org.apache.bookkeeper.stats.StatsLogger;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.nullable;
 
+import java.lang.reflect.Field;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,14 +82,16 @@ public class ReplaceBookieTest {
     }
 
     @Before
-    public void replaceBookieSetUp() throws BKNotEnoughBookiesException, UnknownHostException{
-        Set<BookieId> toRead = new HashSet<BookieId>();
+    public void replaceBookieSetUp() throws BKNotEnoughBookiesException, UnknownHostException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException{
 
         dEpp = new DefaultEnsemblePlacementPolicy();
 
         //Vengono inseriti i known bookies
-        Set<BookieId> toWrite = Utility.parser(knownBookies);
-        dEpp.onClusterChanged(toWrite, toRead);
+        Set<BookieId> oldBookies = Utility.parser(knownBookies);
+        Field privateField = dEpp.getClass().getDeclaredField("knownBookies");
+        privateField.setAccessible(true);
+        privateField.set(dEpp, oldBookies);        
+        
 
         //Si crea il set di bookie da escludere
         if(!excludeBookies.equals("")){
