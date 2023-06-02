@@ -107,8 +107,9 @@ public class NewEnsembleTest {
             when(conf.getBookieMaxWeightMultipleForWeightBasedPlacement()).thenReturn(10);
             dEpp.initialize(conf, null, null, null, null, null);
 
+            BookieId sameBookie = BookieId.parse("bookie-"+Math.random());
             WeightedRandomSelectionImpl<BookieId> wrs = mock(WeightedRandomSelectionImpl.class);
-            when(wrs.getNextRandom()).thenReturn(BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()));
+            when(wrs.getNextRandom()).thenReturn(sameBookie, sameBookie, BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()));
             Field weightedSelection = dEpp.getClass().getDeclaredField("weightedSelection");
             weightedSelection.setAccessible(true);
             weightedSelection.set(dEpp, wrs);
