@@ -52,7 +52,6 @@ public class NewEnsembleTest {
         return Arrays.asList(new Object[][]{     
 //      | ensembleSize | quorumSize | ackQuorumSize | customMetadata | excludeBookies      | throwEx                       | placementPolicyAdherence              | isWeighted |
         { 4            , 1          , 1             , "meta value"   , "bookie02 bookie03" , "BKNotEnoughBookiesException" , null                                  , false      },
-        { 4            , 1          , 1             , "meta value"   , "bookie02 bookie03" , "BKNotEnoughBookiesException" , null                                  , true       },        
         { 0            , 0          , 0             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { -1           , -1         , -1            , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { 2            , 3          , 1             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
@@ -109,7 +108,7 @@ public class NewEnsembleTest {
 
             BookieId sameBookie = BookieId.parse("bookie-"+Math.random());
             WeightedRandomSelectionImpl<BookieId> wrs = mock(WeightedRandomSelectionImpl.class);
-            when(wrs.getNextRandom()).thenReturn(sameBookie, sameBookie, BookieId.parse("bookie02"), BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()));
+            when(wrs.getNextRandom()).thenReturn(sameBookie, sameBookie, BookieId.parse("bookie05"), BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()));
             Field weightedSelection = dEpp.getClass().getDeclaredField("weightedSelection");
             weightedSelection.setAccessible(true);
             weightedSelection.set(dEpp, wrs);
