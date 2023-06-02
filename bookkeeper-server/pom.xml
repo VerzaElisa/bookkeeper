@@ -24,6 +24,17 @@
   </parent>
   <artifactId>bookkeeper-server</artifactId>
   <name>Apache BookKeeper :: Server</name>
+ 
+  <!--Added by Ella badua
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>${java.specification.version}</maven.compiler.source>
+		<maven.compiler.target>${java.specification.version}</maven.compiler.target>
+		<argLine>-javaagent:target/dependency/ba-dua-agent-rt-0.8.1-SNAPSHOT-all.jar -Doutput.file=target/badua.ser</argLine>
+		<maven.deploy.skip>true</maven.deploy.skip>
+	</properties>
+  End-->
+
   <dependencies>
     <!--Added by Ella-->
     <dependency>
@@ -223,6 +234,14 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!--Added by Ella badua
+    <dependency>
+			<groupId>br.usp.each.saeg</groupId>
+			<artifactId>ba-dua-cli</artifactId>
+			<version>0.8.1-SNAPSHOT</version>
+		</dependency>
+    end-->
   </dependencies>
   <build>
   <!--Added by Ella-->
@@ -236,7 +255,97 @@
       </plugins>
     </pluginManagement>
     <plugins>
+  <!--Added by Ella badua
+  <plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.10</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>br.usp.each.saeg</groupId>
+									<artifactId>ba-dua-agent-rt</artifactId>
+									<classifier>all</classifier>
+									<version>0.8.1-SNAPSHOT</version>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.5.0</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<phase>verify</phase>
+						<configuration>
+							<mainClass>br.usp.each.saeg.badua.cli.Report</mainClass>
+							<arguments>
+								<argument>-input</argument>
+								<argument>${project.build.directory}/badua.ser</argument>
+								<argument>-classes</argument>
+								<argument>${project.build.outputDirectory}</argument>
+								<argument>-show-classes</argument>
+								<argument>-show-methods</argument>
+								<argument>-xml</argument>
+								<argument>${project.build.directory}/badua.xml</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<argLine>
+						-javaagent:"/home/ella/Documenti/ba-dua/ba-dua-agent-rt/target/ba-dua-agent-rt-0.8.1-SNAPSHOT-all.jar"
+            -Xbootclasspath/a:"/home/ella/Documenti/ba-dua/ba-dua-agent-rt/target/ba-dua-agent-rt-0.8.1-SNAPSHOT-all.jar"
+					</argLine>
+				</configuration>
+			</plugin>
 
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.0.0-M1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<phase>verify</phase>
+						<configuration>
+							<rules>
+								<requireFileChecksum>
+									<file>${project.build.directory}/badua.xml</file>
+									<checksum>b481fddd94ffd06b62a1f717bdfa9f72</checksum>
+									<type>md5</type>
+								</requireFileChecksum>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+  end-->
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-failsafe-plugin</artifactId>
