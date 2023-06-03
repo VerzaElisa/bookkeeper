@@ -16,6 +16,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ public class NewEnsembleTest {
     private String metadata;
     private Boolean isWeighted;
     static Set<BookieId> paramExclude = new HashSet<BookieId>();
+    static Set<BookieId> oldBookies = new HashSet<BookieId>();
     private String throwEx;
     private PlacementPolicyAdherence ppa;
     private DefaultEnsemblePlacementPolicy dEpp;
@@ -83,7 +85,7 @@ public class NewEnsembleTest {
 
         dEpp = new DefaultEnsemblePlacementPolicy();
         //Vengono inseriti i known bookies
-        Set<BookieId> oldBookies = Utility.parser(knownBookies);
+        oldBookies = Utility.parser(knownBookies);
 
         Field privateField = dEpp.getClass().getDeclaredField("knownBookies");
         privateField.setAccessible(true);
@@ -106,15 +108,28 @@ public class NewEnsembleTest {
             when(conf.getDiskWeightBasedPlacementEnabled()).thenReturn(true);
             when(conf.getBookieMaxWeightMultipleForWeightBasedPlacement()).thenReturn(10);
             dEpp.initialize(conf, null, null, null, null, null);
-
-            BookieId sameBookie = BookieId.parse("bookie-"+Math.random());
+        
+            //Costruzione del pool di bookie id tra cui scegliere
+            List<BookieId> arr = new ArrayList<>();
+            for(int i = 0; i<4; i++){
+                arr.add(BookieId.parse("bookie-"+Math.random()));
+            }
             WeightedRandomSelectionImpl<BookieId> wrs = mock(WeightedRandomSelectionImpl.class);
-            when(wrs.getNextRandom()).thenReturn(sameBookie, sameBookie, BookieId.parse("bookie05"), BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()), BookieId.parse("bookie-"+Math.random()));
+            when(wrs.getNextRandom()).thenReturn(arr.get(0), arr.get(0), paramExclude.iterator().next(), arr.get(1), arr.get(2), arr.get(3));
             Field weightedSelection = dEpp.getClass().getDeclaredField("weightedSelection");
             weightedSelection.setAccessible(true);
             weightedSelection.set(dEpp, wrs);
-        }
 
+            //Costruzione set di ritorno dei test
+            oldBookies = new HashSet<BookieId>();
+            for(int i = 0; i<ensembleSize;i++){
+                oldBookies.add(arr.get(i));
+            }
+        }
+        else{
+            //Si crea il set di ritorno dei test
+            oldBookies.removeAll(paramExclude);
+        }
     }
 
     @After
@@ -127,6 +142,7 @@ public class NewEnsembleTest {
         try{
             PlacementResult<List<BookieId>> ret = dEpp.newEnsemble(ensembleSize, quorumSize, ackQuorumSize, customMetadata, paramExclude);
             Assert.assertEquals(ppa, ret.getAdheringToPolicy());
+            Assert.assertTrue(oldBookies.containsAll(ret.getResult()));
         }catch(Exception e){
             Assert.assertEquals(throwEx, e.getClass().getSimpleName());
         }
