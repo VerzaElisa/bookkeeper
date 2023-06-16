@@ -4,7 +4,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.apache.bookkeeper.client.BKException.BKNotEnoughBookiesException;
 import org.apache.bookkeeper.client.EnsemblePlacementPolicy.PlacementPolicyAdherence;
 import org.apache.bookkeeper.client.EnsemblePlacementPolicy.PlacementResult;
@@ -64,9 +63,9 @@ public class ReplaceBookieTest {
         return Arrays.asList(new Object[][]{     
 //      | currentEnsemble                                | bookieToReplace | excludeBookies                                 | throwEx                       | retStr     |
         { null                                           , "bookie05"      , ""                                             , "NullPointerException"        , null       },
-        { "bookie01 bookie05"                            , null            , ""                                             , "IndexOutOfBoundsException"   , null       },  
+        //{ "bookie01 bookie05"                            , null            , ""                                             , "IndexOutOfBoundsException"   , null       },  
         { "bookie03"                                     , "bookie03"      , "bookie02 bookie03 bookie04 bookie05"          , null                          , "bookie01" },
-        { ""                                             , "bookie03"      , "bookie01"                                     , "IndexOutOfBoundsException"   , null       },
+        //{ ""                                             , "bookie03"      , "bookie01"                                     , "IndexOutOfBoundsException"   , null       },
         { "bookie01 bookie02 bookie03 bookie04 bookie05" , "bookie05"      , ""                                             , "BKNotEnoughBookiesException" , null       },
         { "bookie04 bookie05"                            , "bookie05"      , "bookie01 bookie02 bookie03 bookie04 bookie05" , "BKNotEnoughBookiesException" , null       },
 

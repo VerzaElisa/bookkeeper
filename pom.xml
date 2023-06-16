@@ -70,7 +70,7 @@
     <module>bookkeeper-slogger</module>
     <module>native-io</module>
     <!--Added by ella-->
-    <module>jacoco-coverage</module>
+    <module>tests</module>
     <!--end-->
   </modules>
   <mailingLists>
@@ -106,14 +106,6 @@
     </developer>
   </developers>
   <properties>
-
-   <!--Added by Ella-->
-    <sonar.organization>verzaelisa</sonar.organization>
-    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
-  <!--End-->
-
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <javac.target>1.8</javac.target>
@@ -121,6 +113,11 @@
     <testRetryCount>2</testRetryCount>
     <src.dir>src/main/java</src.dir>
     <test.additional.args />
+   <!--Added by Ella-->
+    <sonar.organization>verzaelisa</sonar.organization>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    <sonar.coverage.jacoco.xmlReportPaths>../jacoco-coverage/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+  <!--End-->
 
     <!-- dependencies -->
     <arquillian-cube.version>1.18.2</arquillian-cube.version>
@@ -546,13 +543,6 @@
       </dependency>
 
       <dependency>
-         <!-- needed by ZooKeeper server tests utilities -->
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${junit5.version}</version>
-      </dependency>
-
-      <dependency>
          <!-- needed by ZooKeeper server -->
          <groupId>org.xerial.snappy</groupId>
          <artifactId>snappy-java</artifactId>
@@ -697,7 +687,6 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${junit.version}</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -841,14 +830,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-    </dependency>
-    <dependency>
       <groupId>commons-configuration</groupId>
       <artifactId>commons-configuration</artifactId>
     </dependency>
@@ -891,19 +872,6 @@
     </extensions>
     <pluginManagement>
       <plugins>
-
-        <!--Added by Ella-->
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.1</version>
-        </plugin>
-        <plugin>
-          <groupId>org.sonarsource.scanner.maven</groupId>
-          <artifactId>sonar-maven-plugin</artifactId>
-          <version>3.9.1.2184</version>
-        </plugin>
-        <!--End-->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
@@ -937,28 +905,6 @@
       </plugins>
     </pluginManagement>
     <plugins>
-
-    <!--Added by Ella-->
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>${jacoco-maven-plugin.version}</version>
-        <executions>
-            <execution>
-              <goals>
-                <goal>prepare-agent</goal>
-              </goals>
-            </execution>
-              <execution>
-                <id>report-aggregate</id>
-                <phase>prepare-package</phase>
-                <goals>
-                  <goal>report</goal>
-                </goals>
-             </execution>
-        </executions>
-      </plugin>
-      <!--End-->
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
@@ -985,7 +931,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${maven-surefire-plugin.version}</version>
-        <configuration>
+        <!--<configuration>
           <argLine>@{argLine} -Xmx2G -Djava.net.preferIPv4Stack=true -Dio.netty.leakDetection.level=paranoid</argLine>
           <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
           <forkCount>${forkCount.variable}</forkCount>
@@ -993,12 +939,20 @@
           <trimStackTrace>false</trimStackTrace>
           <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
           <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>
-        </configuration>
+        </configuration>-->
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${maven-failsafe-plugin.version}</version>
+        	<executions>
+            <execution>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+            </execution>
+          </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -1154,54 +1108,6 @@
     </plugins>
   </build>
   <profiles>
-    <profile>
-      <!-- profile used by jenkins CI -->
-      <id>code-coverage</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.eluder.coveralls</groupId>
-            <artifactId>coveralls-maven-plugin</artifactId>
-            <version>${coveralls-maven-plugin.version}</version>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <version>${maven-surefire-plugin.version}</version>
-            <configuration>
-              <!-- @{argLine} is a variable injected by JaCoCo-->
-              <argLine>@{argLine} -Xmx2G -Djava.net.preferIPv4Stack=true -Dio.netty.leakDetection.level=paranoid</argLine>
-              <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
-              <forkCount>${forkCount.variable}</forkCount>
-              <reuseForks>false</reuseForks>
-              <trimStackTrace>false</trimStackTrace>
-              <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
-              <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <version>${jacoco-maven-plugin.version}</version>
-            <executions>
-              <execution>
-                <id>pre-test</id>
-                <goals>
-                  <goal>prepare-agent</goal>
-                </goals>
-              </execution>
-              <execution>
-                <id>post-test</id>
-                <phase>test</phase>
-                <goals>
-                  <goal>report</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
     <profile>
       <id>owasp-dependency-check</id>
       <build>
@@ -1402,6 +1308,41 @@
                   <skipAssembly>true</skipAssembly>
                 </configuration>
               </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <!-- JaCoCo profile -->
+    <profile>
+      <id>JaCoCoCoverage</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>0.8.10</version>
+            <executions>
+              <execution>
+                <id>prepare-agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+              </execution>
+              <!-- execution>
+                <id>prepare-agent-integration</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+                <configuration>
+                  <append>true</append>
+                  <destFile>target/tests/...</destFile>
+                </configuration>
+              </execution -->
             </executions>
           </plugin>
         </plugins>
