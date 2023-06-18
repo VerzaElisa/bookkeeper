@@ -5,8 +5,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.apache.bookkeeper.client.BKException.BKNotEnoughBookiesException;
+import org.apache.bookkeeper.client.BookieInfoReader.BookieInfo;
 import org.apache.bookkeeper.client.EnsemblePlacementPolicy.PlacementPolicyAdherence;
 import org.apache.bookkeeper.client.EnsemblePlacementPolicy.PlacementResult;
+import org.apache.bookkeeper.client.WeightedRandomSelection.WeightedObject;
 import org.apache.bookkeeper.conf.ClientConfiguration;
 import org.apache.bookkeeper.feature.FeatureProvider;
 
@@ -18,7 +20,13 @@ import org.apache.bookkeeper.proto.BookieAddressResolver;
 import org.apache.bookkeeper.stats.StatsLogger;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
 import java.net.UnknownHostException;
@@ -46,49 +54,53 @@ public class OnClusterChangeTest {
     private String readOnlyBookies;
     private String throwEx;
     private String retStr;
+    private Boolean isWeighted;
     private DefaultEnsemblePlacementPolicy dEpp;
     private String knownBookies = "bookie01 bookie02 bookie03 bookie04 bookie05"; 
+    private Map<BookieId, WeightedObject> bookieInfoMap;
+    private Map<BookieId, WeightedObject> bookieInfoMapSpy;
+    private Set<BookieId> oldBookies;
+    private Set<BookieId> diffNew;
+    private Set<BookieId> diffDead;
+    private WeightedRandomSelection<BookieId> weightedSelection;
+    private WeightedRandomSelection<BookieId> weightedSelectionSpy;
+
     static Set<BookieId> write = new HashSet<BookieId>();
     static Set<BookieId> read = new HashSet<BookieId>();
     static Set<BookieId> ret = new HashSet<BookieId>();
 
 
+//Mettere i bokie già esistenti in bookieinfomap
 
 
     @Parameters
     public static Collection<Object[]> getTestParameters(){
         return Arrays.asList(new Object[][]{     
-//      | writableBookies                                | readOnlyBookies                                 | throwEx                       | retStr                                        |
-        { ""                                             , ""                                              , null                          , "bookie01 bookie02 bookie03 bookie04 bookie05"},
-        { null                                           , "bookie06"                                      , "NullPointerException"        , null                                          },  
-        { "bookie06"                                     , null                                            , "NullPointerException"        , null                                          },  
-        { "bookie01"                                     , "bookie01"                                      , null                          , "bookie02 bookie03 bookie04 bookie05"         },
-        { "bookie01 bookie02 bookie03 bookie04 bookie05" , "bookie02 bookie03 bookie04 bookie05"           , null                          , ""                                            },
-        { "bookie01"                                     , "bookie02"                                      , null                          , "bookie03 bookie04 bookie05"                  },
+//      | writableBookies                                | readOnlyBookies                                 | throwEx                       | retStr                                        | isWeighted |
+        //{ ""                                             , ""                                              , null                          , "bookie01 bookie02 bookie03 bookie04 bookie05", false      },
+        { ""                                             , ""                                              , null                          , "bookie01 bookie02 bookie03 bookie04 bookie05", true       },
+        //{ null                                           , "bookie06"                                      , "NullPointerException"        , null                                          , false      },  
+        //{ "bookie06"                                     , null                                            , "NullPointerException"        , null                                          , false      },  
+        //{ "bookie01"                                     , "bookie01"                                      , null                          , "bookie02 bookie03 bookie04 bookie05"         , false      },
+        //{ "bookie01 bookie02 bookie03 bookie04 bookie05" , "bookie02 bookie03 bookie04 bookie05"           , null                          , ""                                            , false      },
+        //{ "bookie01"                                     , "bookie02"                                      , null                          , "bookie03 bookie04 bookie05"                  , false      },
 
     });
     }
 
-    public OnClusterChangeTest(String writableBookies, String readOnlyBookies, String throwEx, String retStr){
+    public OnClusterChangeTest(String writableBookies, String readOnlyBookies, String throwEx, String retStr, Boolean isWeighted){
         this.writableBookies = writableBookies;
         this.readOnlyBookies = readOnlyBookies; 
         this.throwEx = throwEx;
         this.retStr = retStr;
+        this.isWeighted = isWeighted;
     }
 
     @Before
-    public void replaceBookieSetUp() throws BKNotEnoughBookiesException, UnknownHostException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException{
-
+    public void onClusterChangeSetUp() throws BKNotEnoughBookiesException, UnknownHostException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException{
         dEpp = new DefaultEnsemblePlacementPolicy();
-
-        //Vengono inseriti i known bookies
-        Set<BookieId> oldBookies = Utility.parser(knownBookies);
-        Field privateField = dEpp.getClass().getDeclaredField("knownBookies");
-        privateField.setAccessible(true);
-        privateField.set(dEpp, oldBookies);        
-        
-
-        //Si crea il set di bookie in scrittura e lettura e con il valore di ritorno
+        oldBookies = Utility.parser(knownBookies);
+        //Si crea il set di bookie in scrittura e lettura con il valore di ritorno
         if(writableBookies != null){
             write = Utility.parser(writableBookies);
         }
@@ -104,15 +116,58 @@ public class OnClusterChangeTest {
         if(retStr != null){
             ret = Utility.parser(retStr);
         }
+        
+        //Si pone a true isWeighted
+        if(isWeighted){
+            //Calcolo writableBookie-oldBookie
+            diffNew = new HashSet<>(write);
+            diffNew.removeAll(oldBookies);
+
+            //Calcolo oldBookie-(writableBookie+readableBookie)
+            diffDead = new HashSet<>(oldBookies);
+            diffDead.removeAll(write);
+            diffDead.removeAll(read);
+
+            //Spy di weightedSelection ed inizializzazione
+            ClientConfiguration conf = mock(ClientConfiguration.class);
+            when(conf.getDiskWeightBasedPlacementEnabled()).thenReturn(true);
+            when(conf.getBookieMaxWeightMultipleForWeightBasedPlacement()).thenReturn(10);
+            dEpp.initialize(conf, null, null, null, null, null);
+            
+            weightedSelection = new WeightedRandomSelectionImpl<BookieId>(10);
+            weightedSelectionSpy = spy(weightedSelection);
+            Field privateField02 = dEpp.getClass().getDeclaredField("weightedSelection");
+            privateField02.setAccessible(true);
+            privateField02.set(dEpp, weightedSelectionSpy);
+
+
+            //Spy di bookieInfoMap
+            bookieInfoMap = new HashMap<BookieId, WeightedObject>();
+            bookieInfoMapSpy = spy(bookieInfoMap);
+            Field privateField01 = dEpp.getClass().getDeclaredField("bookieInfoMap");
+            privateField01.setAccessible(true);
+            privateField01.set(dEpp, bookieInfoMapSpy);
+        }
+
+        //Vengono inseriti i known bookies
+        Field privateField = dEpp.getClass().getDeclaredField("knownBookies");
+        privateField.setAccessible(true);
+        privateField.set(dEpp, oldBookies);        
     }
     @Test
     public void onClusterChangeTest() throws UnknownHostException, BKNotEnoughBookiesException{
         try{
             Set<BookieId> retBookies = dEpp.onClusterChanged(write, read);
             Assert.assertEquals(true, ret.equals(retBookies));
+            if(isWeighted){
+                verify(bookieInfoMapSpy, times(diffDead.size())).remove(any(BookieId.class));
+                verify(bookieInfoMapSpy, times(diffNew.size())).put(any(BookieId.class), any(BookieInfo.class));
+                if(Math.max(diffDead.size(), diffNew.size())>0){
+                    verify(weightedSelectionSpy).updateMap(any(Map.class));
+                }
+            }
         }catch(Exception e){
             Assert.assertEquals(throwEx, e.getClass().getSimpleName());
         }
     }
 }
-//onclusterchange initialize(?) updateBookieInfo

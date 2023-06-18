@@ -343,13 +343,12 @@
             <configuration>
               <targetClasses>
                 <!-- param>org.apache.bookkeeper.bookie.BufferedChannel</param -->
-                <param>org.apache.bookkeeper.bookie.Journal</param>
+                <param>org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy</param>
               </targetClasses>
               <targetTests>
                 <!-- param>org.apache.bookkeeper.bookie.BufferedChannelWritingTest</param -->
                 <!-- param>org.apache.bookkeeper.bookie.BufferedChannelReadingTest</param -->
-                <param>org.apache.bookkeeper.bookie.JournalScanningJournalTest</param>
-                <param>org.apache.bookkeeper.bookie.JournalCheckpointCompletingTest</param>
+                <param>org.apache.bookkeeper.client.NewEnsembleTest</param>
               </targetTests>
               <avoidCallsTo>
                 <avoidCallsTo>org.slf4j</avoidCallsTo>

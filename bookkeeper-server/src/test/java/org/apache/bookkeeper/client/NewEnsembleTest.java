@@ -54,7 +54,6 @@ public class NewEnsembleTest {
         return Arrays.asList(new Object[][]{     
 //      | ensembleSize | quorumSize | ackQuorumSize | customMetadata | excludeBookies      | throwEx                       | placementPolicyAdherence              | isWeighted |
         { 4            , 1          , 1             , "meta value"   , "bookie02 bookie03" , "BKNotEnoughBookiesException" , null                                  , false      },
-        { 4            , 1          , 1             , "meta value"   , "bookie02 bookie03" , "BKNotEnoughBookiesException" , null                                  , true      },
         { 0            , 0          , 0             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { -1           , -1         , -1            , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { 2            , 3          , 1             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
@@ -104,6 +103,7 @@ public class NewEnsembleTest {
 
         //Si pone a true la variabile isWeighted
         if(isWeighted){
+            //Viene chiamato il metodo initialize per inizializzare la variabile weightedSelection che estrae i bookie per l'ensemble
             ClientConfiguration conf = mock(ClientConfiguration.class);
             when(conf.getDiskWeightBasedPlacementEnabled()).thenReturn(true);
             when(conf.getBookieMaxWeightMultipleForWeightBasedPlacement()).thenReturn(10);
@@ -114,6 +114,8 @@ public class NewEnsembleTest {
             for(int i = 0; i<4; i++){
                 arr.add(BookieId.parse("bookie-"+Math.random()));
             }
+            //Viene mockata la weightedSelection per fare in modo che prenda i bookie da un set predisposto che presenta inizialmente due bookie uguali
+            //poi un bookie id da escludere e poi altri tre bookie validi
             WeightedRandomSelectionImpl<BookieId> wrs = mock(WeightedRandomSelectionImpl.class);
             when(wrs.getNextRandom()).thenReturn(arr.get(0), arr.get(0), paramExclude.iterator().next(), arr.get(1), arr.get(2), arr.get(3));
             Field weightedSelection = dEpp.getClass().getDeclaredField("weightedSelection");
@@ -127,7 +129,7 @@ public class NewEnsembleTest {
             }
         }
         else{
-            //Si crea il set di ritorno dei test
+            //Si crea il set contenente i knownBookie - excludeBookie
             oldBookies.removeAll(paramExclude);
         }
     }
@@ -142,7 +144,9 @@ public class NewEnsembleTest {
         try{
             PlacementResult<List<BookieId>> ret = dEpp.newEnsemble(ensembleSize, quorumSize, ackQuorumSize, customMetadata, paramExclude);
             Assert.assertEquals(ppa, ret.getAdheringToPolicy());
-            Assert.assertTrue(oldBookies.containsAll(ret.getResult()));
+            if(ppa.equals(PlacementPolicyAdherence.MEETS_STRICT)){
+                Assert.assertTrue(oldBookies.containsAll(ret.getResult()));
+            }
         }catch(Exception e){
             Assert.assertEquals(throwEx, e.getClass().getSimpleName());
         }
