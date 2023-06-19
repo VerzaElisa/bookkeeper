@@ -76,15 +76,17 @@ public class OnClusterChangeTest {
     @Parameters
     public static Collection<Object[]> getTestParameters(){
         return Arrays.asList(new Object[][]{     
-//      | writableBookies                                | readOnlyBookies                                 | throwEx                       | retStr                                        | isWeighted |
-        //{ ""                                             , ""                                              , null                          , "bookie01 bookie02 bookie03 bookie04 bookie05", false      },
-        { ""                                             , ""                                              , null                          , "bookie01 bookie02 bookie03 bookie04 bookie05", true       },
-        //{ null                                           , "bookie06"                                      , "NullPointerException"        , null                                          , false      },  
-        //{ "bookie06"                                     , null                                            , "NullPointerException"        , null                                          , false      },  
-        //{ "bookie01"                                     , "bookie01"                                      , null                          , "bookie02 bookie03 bookie04 bookie05"         , false      },
-        //{ "bookie01 bookie02 bookie03 bookie04 bookie05" , "bookie02 bookie03 bookie04 bookie05"           , null                          , ""                                            , false      },
-        //{ "bookie01"                                     , "bookie02"                                      , null                          , "bookie03 bookie04 bookie05"                  , false      },
-
+//      | writableBookies                                | readOnlyBookies                                | throwEx                       | retStr                                         | isWeighted |
+        { ""                                             , ""                                             , null                          , "bookie01 bookie02 bookie03 bookie04 bookie05" , false      },
+        { ""                                             , ""                                             , null                          , "bookie01 bookie02 bookie03 bookie04 bookie05" , true       },
+        { null                                           , "bookie06"                                     , "NullPointerException"        , null                                           , false      },  
+        { "bookie06"                                     , null                                           , "NullPointerException"        , null                                           , false      },  
+        { "bookie01"                                     , "bookie01"                                     , null                          , "bookie02 bookie03 bookie04 bookie05"          , false      },
+        { "bookie01 bookie02 bookie03 bookie04 bookie05" , "bookie01 bookie02 bookie03 bookie04 bookie05" , null                          , ""                                             , false      },
+        { "bookie01 bookie02 bookie03 bookie04 bookie05" , "bookie01 bookie02 bookie03 bookie04 bookie05" , null                          , ""                                             , true       },
+        { "bookie01"                                     , "bookie02"                                     , null                          , "bookie03 bookie04 bookie05"                   , false      },
+        { "bookie06"                                     , "bookie01 bookie02 bookie03 bookie04 bookie05" , null                          , ""                                             , true       },
+        { "bookie01 bookie07"                            , ""                                             , null                          , "bookie02 bookie03 bookie04 bookie05"          , true       }    
     });
     }
 
