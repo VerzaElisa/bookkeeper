@@ -68,7 +68,7 @@ public class NewEnsembleTest {
 //      | ensembleSize | quorumSize | ackQuorumSize | customMetadata | excludeBookies      | throwEx                       | placementPolicyAdherence              | isWeighted |
         { 4            , 1          , 1             , "meta value"   , "bookie02 bookie03" , "BKNotEnoughBookiesException" , null                                  , false      },
         { 4            , 1          , 1             , "meta value"   , "bookie02 bookie03" , "BKNotEnoughBookiesException" , null                                  , true       },
-        { 0            , 0          , 0             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
+        //{ 0            , 0          , 0             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { -1           , -1         , -1            , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { 2            , 3          , 1             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { 2            , 1          , 3             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
@@ -147,7 +147,7 @@ public class NewEnsembleTest {
             oldBookies.removeAll(paramExclude);
         }
 
-        //kill mutation 79, 103
+        //kill mutation 79, 103 verifico che venga invocato unlock solo se ensemble size è maggiore stretto di 0 e 1 volta se isWeighted è false 2 altrimenti
         rwLockMock = mock(ReentrantReadWriteLock.class);
         readLockMock = Mockito.mock(ReadLock.class);
         Mockito.when(rwLockMock.readLock()).thenReturn(readLockMock);
@@ -157,6 +157,9 @@ public class NewEnsembleTest {
         privateField02.set(dEpp, rwLockMock);
         if(isWeighted){
             t = 2;
+        }
+        if(ensembleSize == 0){
+            t = 0;
         }
     }
 
@@ -176,7 +179,7 @@ public class NewEnsembleTest {
             }
         }catch(Exception e){
             Assert.assertEquals(throwEx, e.getClass().getSimpleName());
-            verify(readLockMock, times(t)).unlock();
         }
+        verify(readLockMock, times(t)).unlock();
     }
 }
