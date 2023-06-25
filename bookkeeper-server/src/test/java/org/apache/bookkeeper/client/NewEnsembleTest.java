@@ -10,9 +10,16 @@ import org.apache.bookkeeper.client.EnsemblePlacementPolicy.PlacementResult;
 import org.apache.bookkeeper.conf.ClientConfiguration;
 
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 
 import org.apache.bookkeeper.net.BookieId;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.UnknownHostException;
@@ -28,6 +35,9 @@ import java.lang.reflect.Field;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.Answers;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 
 
 @RunWith(value=Parameterized.class)
@@ -46,7 +56,10 @@ public class NewEnsembleTest {
     private String throwEx;
     private PlacementPolicyAdherence ppa;
     private DefaultEnsemblePlacementPolicy dEpp;
-
+    private ReentrantReadWriteLock rwLock;
+    private ReentrantReadWriteLock rwLockMock;
+    private ReadLock readLockMock;
+    private Integer t = 1;
 
 
     @Parameters
@@ -133,11 +146,24 @@ public class NewEnsembleTest {
             //Si crea il set contenente i knownBookie - excludeBookie
             oldBookies.removeAll(paramExclude);
         }
+
+        //kill mutation 79, 103
+        rwLockMock = mock(ReentrantReadWriteLock.class);
+        readLockMock = Mockito.mock(ReadLock.class);
+        Mockito.when(rwLockMock.readLock()).thenReturn(readLockMock);
+
+        Field privateField02 = dEpp.getClass().getDeclaredField("rwLock");
+        privateField02.setAccessible(true);
+        privateField02.set(dEpp, rwLockMock);
+        if(isWeighted){
+            t = 2;
+        }
     }
 
     @After
     public void newEnsembleClose(){
         paramExclude = new HashSet<BookieId>();
+        t = 1;
     }
 
     @Test
@@ -150,6 +176,7 @@ public class NewEnsembleTest {
             }
         }catch(Exception e){
             Assert.assertEquals(throwEx, e.getClass().getSimpleName());
+            verify(readLockMock, times(t)).unlock();
         }
     }
 }
