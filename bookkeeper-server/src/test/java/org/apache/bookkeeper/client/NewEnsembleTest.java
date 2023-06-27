@@ -15,6 +15,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 
 import org.apache.bookkeeper.net.BookieId;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -53,6 +54,7 @@ public class NewEnsembleTest {
     private Boolean isWeighted;
     static Set<BookieId> paramExclude = new HashSet<BookieId>();
     static Set<BookieId> oldBookies = new HashSet<BookieId>();
+    static List<BookieId> obList;
     private String throwEx;
     private PlacementPolicyAdherence ppa;
     private DefaultEnsemblePlacementPolicy dEpp;
@@ -68,7 +70,7 @@ public class NewEnsembleTest {
 //      | ensembleSize | quorumSize | ackQuorumSize | customMetadata | excludeBookies      | throwEx                       | placementPolicyAdherence              | isWeighted |
         { 4            , 1          , 1             , "meta value"   , "bookie02 bookie03" , "BKNotEnoughBookiesException" , null                                  , false      },
         { 4            , 1          , 1             , "meta value"   , "bookie02 bookie03" , "BKNotEnoughBookiesException" , null                                  , true       },
-        //{ 0            , 0          , 0             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
+        { 0            , 0          , 0             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { -1           , -1         , -1            , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { 2            , 3          , 1             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
 //      { 2            , 1          , 3             , "meta value"   , ""                  , ""                            , PlacementPolicyAdherence.FAIL         , false      },
@@ -145,6 +147,8 @@ public class NewEnsembleTest {
         else{
             //Si crea il set contenente i knownBookie - excludeBookie
             oldBookies.removeAll(paramExclude);
+            
+
         }
 
         //kill mutation 79, 103 verifico che venga invocato unlock solo se ensemble size è maggiore stretto di 0 e 1 volta se isWeighted è false 2 altrimenti
@@ -161,6 +165,8 @@ public class NewEnsembleTest {
         if(ensembleSize == 0){
             t = 0;
         }
+
+        obList = new ArrayList<BookieId>(oldBookies);
     }
 
     @After
@@ -176,10 +182,15 @@ public class NewEnsembleTest {
             Assert.assertEquals(ppa, ret.getAdheringToPolicy());
             if(ppa.equals(PlacementPolicyAdherence.MEETS_STRICT)){
                 Assert.assertTrue(oldBookies.containsAll(ret.getResult()));
+                if(!isWeighted){
+                    Assert.assertNotEquals(ret.getResult(), obList.subList(0, ensembleSize));
+                }
+                assertEquals(ensembleSize, ret.getResult().size());
             }
         }catch(Exception e){
             Assert.assertEquals(throwEx, e.getClass().getSimpleName());
         }
         verify(readLockMock, times(t)).unlock();
+        verify(readLockMock, times(t)).lock();
     }
 }
