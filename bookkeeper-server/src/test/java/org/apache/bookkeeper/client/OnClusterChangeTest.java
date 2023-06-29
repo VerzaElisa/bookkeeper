@@ -13,6 +13,9 @@ import org.apache.bookkeeper.conf.ClientConfiguration;
 import org.apache.bookkeeper.feature.FeatureProvider;
 
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import org.apache.bookkeeper.net.BookieId;
 import org.apache.bookkeeper.net.DNSToSwitchMapping;
@@ -44,6 +47,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 import io.netty.util.HashedWheelTimer;
 
@@ -64,6 +68,10 @@ public class OnClusterChangeTest {
     private Set<BookieId> diffDead;
     private WeightedRandomSelection<BookieId> weightedSelection;
     private WeightedRandomSelection<BookieId> weightedSelectionSpy;
+    private ReentrantReadWriteLock rwLockMock;
+    private WriteLock writeLockMock;
+    private Integer t = 0;
+
 
     static Set<BookieId> write = new HashSet<BookieId>();
     static Set<BookieId> read = new HashSet<BookieId>();
@@ -149,24 +157,40 @@ public class OnClusterChangeTest {
             Field privateField01 = dEpp.getClass().getDeclaredField("bookieInfoMap");
             privateField01.setAccessible(true);
             privateField01.set(dEpp, bookieInfoMapSpy);
+            //if(diffDead.size()>0 || diffNew.size()>0){
+            if(Math.max(diffDead.size(), diffNew.size())>0){
+                t = 1;
+            }
+
         }
 
         //Vengono inseriti i known bookies
         Field privateField = dEpp.getClass().getDeclaredField("knownBookies");
         privateField.setAccessible(true);
-        privateField.set(dEpp, oldBookies);        
+        privateField.set(dEpp, oldBookies);   
+        
+        //kill mutation 163
+        rwLockMock = mock(ReentrantReadWriteLock.class);
+        writeLockMock = Mockito.mock(WriteLock.class);
+        Mockito.when(rwLockMock.writeLock()).thenReturn(writeLockMock);
+
+        Field privateField02 = dEpp.getClass().getDeclaredField("rwLock");
+        privateField02.setAccessible(true);
+        privateField02.set(dEpp, rwLockMock);
     }
     @Test
     public void onClusterChangeTest() throws UnknownHostException, BKNotEnoughBookiesException{
         try{
             Set<BookieId> retBookies = dEpp.onClusterChanged(write, read);
             Assert.assertEquals(true, ret.equals(retBookies));
+            verify(writeLockMock).unlock();
+            verify(writeLockMock).lock();
             if(isWeighted){
                 verify(bookieInfoMapSpy, times(diffDead.size())).remove(any(BookieId.class));
                 verify(bookieInfoMapSpy, times(diffNew.size())).put(any(BookieId.class), any(BookieInfo.class));
-                if(Math.max(diffDead.size(), diffNew.size())>0){
-                    verify(weightedSelectionSpy).updateMap(any(Map.class));
-                }
+                //if(Math.max(diffDead.size(), diffNew.size())>0){
+                    verify(weightedSelectionSpy, times(t)).updateMap(any(Map.class));
+                //}
             }
         }catch(Exception e){
             Assert.assertEquals(throwEx, e.getClass().getSimpleName());
