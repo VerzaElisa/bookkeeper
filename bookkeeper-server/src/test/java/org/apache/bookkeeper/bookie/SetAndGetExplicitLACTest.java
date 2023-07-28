@@ -100,6 +100,12 @@ public class SetAndGetExplicitLACTest{
         bb.rewind();
     }
 
+    @After
+    public void onClose(){
+        File myObj = new File(Variables.LEDGER_FILE_INDEX); 
+        myObj.delete();
+    }
+
     @Test
     public void SAndGExplicitLACTest() throws IOException, IllegalArgumentException, IllegalAccessException {
         try{

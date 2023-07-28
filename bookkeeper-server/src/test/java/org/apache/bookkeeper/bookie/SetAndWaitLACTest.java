@@ -107,7 +107,11 @@ public class SetAndWaitLACTest{
         //Creato mock per waitForLastAddConfirmedUpdate
         watcher = Mockito.mock(Watcher.class);
     }
-
+    @After
+    public void onClose(){
+        File myObj = new File(Variables.LEDGER_FILE_INDEX); 
+        myObj.delete();
+    }
     @Test
     public void SAndWLACTest() throws IOException {
         assertEquals(lac, fi.setLastAddConfirmed(lac));
