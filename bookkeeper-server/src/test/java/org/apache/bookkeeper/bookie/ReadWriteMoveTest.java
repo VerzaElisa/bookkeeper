@@ -25,6 +25,7 @@ import java.io.RandomAccessFile;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,52 +44,57 @@ import io.netty.buffer.Unpooled;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @RunWith(value=Parameterized.class)
-public class HeaderTest{
+public class ReadWriteMoveTest{
     private FileInfo fi;
     private String exception;
     private File fl = new File(Variables.LEDGER_FILE_INDEX);
-    private String magic;
+    private String magic = "BKLE";
     private String key;
     private int version;
     private int headerMKLen;
     private boolean del;
+    private static final int fileLen = 1000;
+    private int start;
+    private int toSum;
+    private boolean bestEffort;
+    private ByteBuffer bb;
+    private long exp;
 
     @Parameters
     public static Collection<Object[]> getTestParameters(){
         return Arrays.asList(new Object[][]{
-//          | exception                  | magic  | key    |version | headerMKLen | del  |
-            { "IOException"              , "BKLE" , "abcd" , 1      , 4           , true }, 
-            { "IOException"              , "ABCD" , "abcd" , 1      , 4           , false},
-            { "IOException"              , "BKLE" , "abcd" , 0      , 4           , false},
-            { "IOException"              , "BKLE" , "abcd" , 2      , 4           , false},
-            { "IOException"              , "BKLE" , "abcd" , 1      , -1          , false},
-            { "BufferUnderflowException" , "BKLE" , "abcd" , 1      , 5           , false},
-            { null                       , "BKLE" , "abcd" , 1      , 4           , false},
+//          | exception                  | start     | bbSize  | bestEffort |
+            { "IllegalArgumentException" , -1025     , -1      , true       }, 
+            { null                       , fileLen+1 , -1      , true       },    
+            { null                       , -1024     , 0       , true       },
+            { "ShortReadException"       , -1024     , 0       , false      }, 
+            { null                       , -1024     , -1      , true       },
+            { null                       , fileLen   , +1      , true       },  
+            { "ShortReadException"       , fileLen   , +1      , false      },   
         });
     }
 
-    public HeaderTest(String exception, String magic, String key, int version, int headerMKLen, boolean del){
+    public ReadWriteMoveTest(String exception, int start, int toSum, boolean bestEffort){
         this.exception = exception;
-        this.magic = magic;
-        this.version = version;
-        this.key = key;
-        this.headerMKLen = headerMKLen;
-        this.del = del;
+        this.start = start;
+        this.toSum = toSum;
+        this.bestEffort = bestEffort;
     }
 
 /*Nel setup viene creato l'oggetto FileInfo.*/
     @Before
-    public void setUp() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+    public void setUp() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchAlgorithmException {
         byte[] mk = Variables.MASTER_KEY.getBytes();
         int ver = Variables.VERSION;
         fi = new FileInfo(fl, mk, ver);
-        if(del){
-            fl.delete();
-        }else{
-            //Popolo il file per i test
-            Utilities.createFile(fl, key, magic, version, headerMKLen, 24);
-        }
-        
+        //Viene scritto l'header e il contenuto randomico del file
+        Utilities.createFile(fl, Variables.MASTER_KEY, magic, 1, Variables.MASTER_KEY.length(), 1024);
+        Utilities.writeOnFile(fileLen, fl);
+        //Viene creato il bytebuffer di input della giusta dimensione
+        bb = ByteBuffer.allocate((Math.abs(start-fileLen)+toSum));
+        bb.rewind();
+        //Viene assegnato il valore atteso in caso di successo
+        exp = Math.min(Math.abs(start-fileLen), bb.capacity());
     }
     @After
     public void onClose(){
@@ -98,7 +104,8 @@ public class HeaderTest{
     @Test
     public void readHeaderTest(){
         try{
-            fi.readHeader();
+            long ret = fi.read(bb, start, bestEffort);
+            Assert.assertEquals(exp, ret);
         }catch(Exception e){    
             Assert.assertEquals(exception, e.getClass().getSimpleName());
         }
