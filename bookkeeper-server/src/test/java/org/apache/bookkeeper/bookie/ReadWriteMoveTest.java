@@ -49,6 +49,7 @@ public class ReadWriteMoveTest{
     private FileInfo fi;
     private String exception;
     private File fl = new File(Variables.LEDGER_FILE_INDEX);
+    private File moveFile = new File("testFiles/moveFile");
     private String magic = "BKLE";
     private String key;
     private int version;
@@ -65,22 +66,25 @@ public class ReadWriteMoveTest{
     private int wBbSize;
     private Integer writeBuffArray;
     private String wExcept;
+    private boolean exists;
+    private long size;
+    private String mException;
 
     @Parameters
     public static Collection<Object[]> getTestParameters(){
         return Arrays.asList(new Object[][]{
-//          | exception                  | start     | bbSize  | bestEffort | writeBuffArray | writePos | wBbSize       | wExcept                          |
-            { "IllegalArgumentException" , -1025     , -1      , true       , 1              , -1025     , -1025-fileLen , "IllegalArgumentException"       }, 
-            { null                       , fileLen+1 , -1      , true       , null           , 0         , 0             , "NullPointerException"           },    
-            { null                       , -1024     , 0       , true       , 0              , 0         , 0             , "ArrayIndexOutOfBoundsException" },
-            { "ShortReadException"       , -1024     , 0       , false      , 1              , 0         , 0             , "ShortWriteException"            }, 
-            { null                       , -1024     , -1      , true       , 1              , 0         , fileLen       , null                             },
-            { null                       , fileLen   , +1      , true       , 1              , 0         , fileLen+1     , null                             },  
-            { "ShortReadException"       , fileLen   , +1      , false      , 1              , fileLen+1 , 1             , null                             },   
+//          | exception                  | start     | bbSize  | bestEffort | writeBuffArray | writePos | wBbSize       | wExcept                          | exists | size      | mException |
+            { "IllegalArgumentException" , -1025     , -1      , true       , 1              , -1025    , -1025-fileLen , "IllegalArgumentException"       , false  , 100       , null       }, 
+            { null                       , fileLen+1 , -1      , true       , null           , 0        , 0             , "NullPointerException"           , true   , 0         , null       },    
+            { null                       , -1024     , 0       , true       , 0              , 0        , 0             , "ArrayIndexOutOfBoundsException" , true   , 1         , null       },
+            { "ShortReadException"       , -1024     , 0       , false      , 1              , 0         , 0             , "ShortWriteException"           , true  , fileLen+1 , null        }, 
+            { null                       , -1024     , -1      , true       , 1              , 0         , fileLen       , null                            , true  , fileLen+1 , null        },
+            { null                       , fileLen   , +1      , true       , 1              , 0         , fileLen+1     , null                            , true  , fileLen+1 , null         },  
+            { "ShortReadException"       , fileLen   , +1      , false      , 1              , fileLen+1 , 1             , null                            , true  , fileLen+1 , null         },   
         });
     }
 
-    public ReadWriteMoveTest(String exception, int start, int toSum, boolean bestEffort, Integer writeBuffArray, long writePos, int wBbSize, String wExcept){
+    public ReadWriteMoveTest(String exception, int start, int toSum, boolean bestEffort, Integer writeBuffArray, long writePos, int wBbSize, String wExcept, boolean exists, long size, String mException){
         this.exception = exception;
         this.start = start;
         this.toSum = toSum;
@@ -89,6 +93,9 @@ public class ReadWriteMoveTest{
         this.wBbSize = wBbSize;
         this.wExcept = wExcept;
         this.writeBuffArray = writeBuffArray;
+        this.exists = exists;
+        this.size = size;
+        this.mException = mException;
     }
 
 /*Nel setup viene creato l'oggetto FileInfo.*/
@@ -125,10 +132,19 @@ public class ReadWriteMoveTest{
         } 
     }
 
+    @Before
+    public void moveSetUp() throws IOException{
+        if(exists){
+            moveFile.createNewFile();
+        }
+    }
+
     @After
     public void onClose(){
         File myObj = new File(Variables.LEDGER_FILE_INDEX); 
         myObj.delete();
+        File myObj1 = new File("testFiles/moveFile"); 
+        myObj1.delete();
     }
     @Test
     public void readHeaderTest(){
@@ -148,6 +164,19 @@ public class ReadWriteMoveTest{
             Assert.assertEquals(Math.max(fileLen+1024, writePos+wBbSize+1024), fl.length());
         }catch(Exception e){    
             Assert.assertEquals(wExcept, e.getClass().getSimpleName());
+        }
+    }
+
+    @Test
+    public void moveTest(){
+        try{
+            fi.moveToNewLocation(moveFile, size);
+            System.out.println("qui");
+            assertTrue(moveFile.exists());
+            Assert.assertEquals(Math.min(size, 1024+fileLen), moveFile.length());
+        }catch(Exception e){ 
+            e.printStackTrace();   
+            Assert.assertEquals(mException, e.getClass().getSimpleName());
         }
     }
 }
