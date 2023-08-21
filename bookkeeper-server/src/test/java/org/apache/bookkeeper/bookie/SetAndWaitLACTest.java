@@ -2,6 +2,8 @@ package org.apache.bookkeeper.bookie;
 
 import org.apache.bookkeeper.common.util.Watcher;
 import org.apache.bookkeeper.net.BookieId;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -78,6 +80,7 @@ public class SetAndWaitLACTest{
 /*Nel setup viene creato l'oggetto FileInfo.*/
     @Before
     public void setUp() throws IOException {
+        Configurator.setLevel("org.apache.bookkeeper.bookie.FileInfo", Level.TRACE);
         parsed = new ArrayList<Long>();
         exp = new ArrayList<Long>();
         byte[] mk = Variables.MASTER_KEY.getBytes();;
