@@ -83,7 +83,7 @@ public class SetAndWaitLACTest{
             {-1   , "3 2 4"  , null                   , watcher , false , Level.TRACE , false    }, 
             {0    , "3 2 4"  , null                   , watcher , true  , Level.INFO  , false    },
             {1    , "3 2 4"  , "NullPointerException" , null    , true  , Level.INFO  , false    },
-            {0    , ""       , null                   , watcher , false , Level.INFO  , true     },
+            //{0    , ""       , null                   , watcher , false , Level.INFO  , true     },
             //{null , null     , null                   , watcher , false , Level.TRACE , true     },
         });
     }

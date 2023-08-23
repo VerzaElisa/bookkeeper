@@ -10,8 +10,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.lang3.RandomUtils;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -30,6 +35,29 @@ public class Utilities {
         Field privateField = classToModify.getClass().getDeclaredField(fieldName);
         privateField.setAccessible(true);
         privateField.set(classToModify, newValue);  
+    }
+
+    public static ByteBuf bbCreator(Long leftLimit, Long rightLimit, int byteBuffLen){
+        int i = 0;
+        ByteBuffer bb;
+        ByteBuf retLac;
+        long entry;
+        List<Long> entryList = new ArrayList<>();
+        bb = ByteBuffer.allocate(byteBuffLen);
+        while(i<(byteBuffLen/8)){
+            entry = leftLimit + (long) (Math.random() * (rightLimit - leftLimit));
+            entryList.add(entry);
+            
+            bb.putLong(entry);
+            i++;
+        }
+        bb.rewind();
+        //Conversione ByteBuffer in ByteBuf
+        retLac = Unpooled.buffer(bb.capacity());
+        bb.rewind();
+        retLac.writeBytes(bb);
+        bb.rewind();
+        return retLac;
     }
 
     public static void createFile(File fl, String key, String magic, int version, int headerMKLen, int buffLen) throws FileNotFoundException{
