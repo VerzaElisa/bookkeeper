@@ -31,10 +31,11 @@ public class Utilities {
         field.set(null, newValue);
     }
 
-    public static void setPrivate(Object classToModify, Object newValue, String fieldName) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException{
+    public static Field setPrivate(Object classToModify, Object newValue, String fieldName) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException{
         Field privateField = classToModify.getClass().getDeclaredField(fieldName);
         privateField.setAccessible(true);
         privateField.set(classToModify, newValue);  
+        return privateField;
     }
 
     public static ByteBuf bbCreator(Long leftLimit, Long rightLimit, int byteBuffLen){
@@ -60,19 +61,22 @@ public class Utilities {
         return retLac;
     }
 
-    public static void createFile(File fl, String key, String magic, int version, int headerMKLen, int buffLen) throws FileNotFoundException{
+    public static void createFile(File fl, String key, String magic, int version, int headerMKLen, int explicitLacBufLength, int stateBits, byte[] lac_byte) throws FileNotFoundException{
         try (FileChannel myWriter = new RandomAccessFile(fl, "rw").getChannel()) {
                 byte[] headerMK = key.getBytes();
                 int signature = ByteBuffer.wrap(magic.getBytes(UTF_8)).getInt();
-                ByteBuffer headerBB = ByteBuffer.allocate(buffLen);
-                
+                ByteBuffer headerBB = ByteBuffer.allocate(20+headerMK.length+Math.abs(explicitLacBufLength));
                 headerBB.putInt(signature);
                 headerBB.putInt(version);
                 headerBB.putInt(headerMKLen);
                 headerBB.put(headerMK);
+                headerBB.putInt(stateBits);
+                headerBB.putInt(explicitLacBufLength);
+                headerBB.put(lac_byte);
                 headerBB.rewind();
                 myWriter.position(0);
                 myWriter.write(headerBB);
+                headerBB.rewind();
             } catch (FileNotFoundException e) {
                 throw e;
             } catch (IOException e) {

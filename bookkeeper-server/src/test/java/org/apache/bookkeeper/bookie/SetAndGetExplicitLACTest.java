@@ -69,7 +69,7 @@ public class SetAndGetExplicitLACTest{
         return Arrays.asList(new Object[][]{
 //          | byteBuff len | exception                  | full  | inside | logStatus   |
             { 16           , null                       , true  , 16     , Level.INFO  },
-            //{ 16           , null                       , true  , 0    },    
+            { 16           , "BufferUnderflowException" , true  , 15     , Level.INFO  },    
             { 16           , null                       , false , 0      , Level.DEBUG },
             { 24           , null                       , false , 0      , Level.DEBUG },
             { 8            , "BufferUnderflowException" , false , 0      , Level.DEBUG },

@@ -47,9 +47,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @RunWith(value=Parameterized.class)
 public class ReadWriteMoveTest{
     private FileInfo fi;
+    private String path = "testsFiles/moveFile";
     private String exception;
     private File fl = new File(Variables.LEDGER_FILE_INDEX);
-    private File moveFile = new File("testFiles/moveFile");
+    private File moveFile = new File(path);
     private String magic = "BKLE";
     private String key;
     private int version;
@@ -69,6 +70,7 @@ public class ReadWriteMoveTest{
     private boolean exists;
     private long size;
     private String mException;
+    private int explicitLacBufLength = 0;
 
     @Parameters
     public static Collection<Object[]> getTestParameters(){
@@ -105,7 +107,13 @@ public class ReadWriteMoveTest{
         int ver = Variables.VERSION;
         fi = new FileInfo(fl, mk, ver);
         //Viene scritto l'header e il contenuto randomico del file
-        Utilities.createFile(fl, Variables.MASTER_KEY, magic, 1, Variables.MASTER_KEY.length(), 1024);
+        ByteBuffer lac = Utilities.bbCreator(0L, 100L, Math.abs(explicitLacBufLength)).nioBuffer();
+        lac.rewind();
+        byte[] lac_byte = new byte[lac.remaining()];
+        lac.get(lac_byte);
+        lac.rewind();
+
+        Utilities.createFile(fl, Variables.MASTER_KEY, magic, 1, Variables.MASTER_KEY.length(), explicitLacBufLength, 0, lac_byte);
         Utilities.writeOnFile(fileLen, fl);
         //Viene creato il bytebuffer di input della giusta dimensione
         bb = ByteBuffer.allocate((Math.abs(start-fileLen)+toSum));
@@ -143,7 +151,7 @@ public class ReadWriteMoveTest{
     public void onClose(){
         File myObj = new File(Variables.LEDGER_FILE_INDEX); 
         myObj.delete();
-        File myObj1 = new File("testFiles/moveFile"); 
+        File myObj1 = new File(path); 
         myObj1.delete();
     }
     @Test
@@ -171,7 +179,6 @@ public class ReadWriteMoveTest{
     public void moveTest(){
         try{
             fi.moveToNewLocation(moveFile, size);
-            System.out.println("qui");
             assertTrue(moveFile.exists());
             Assert.assertEquals(Math.min(size, 1024+fileLen), moveFile.length());
         }catch(Exception e){ 

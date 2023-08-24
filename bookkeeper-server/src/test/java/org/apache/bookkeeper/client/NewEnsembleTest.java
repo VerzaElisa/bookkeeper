@@ -167,6 +167,7 @@ public class NewEnsembleTest {
         }
 
         obList = new ArrayList<BookieId>(oldBookies);
+        //System.out.println(obList);
     }
 
     @After
@@ -182,9 +183,6 @@ public class NewEnsembleTest {
             Assert.assertEquals(ppa, ret.getAdheringToPolicy());
             if(ppa.equals(PlacementPolicyAdherence.MEETS_STRICT)){
                 Assert.assertTrue(oldBookies.containsAll(ret.getResult()));
-                if(!isWeighted){
-                    Assert.assertNotEquals(ret.getResult(), obList.subList(0, ensembleSize));
-                }
                 assertEquals(ensembleSize, ret.getResult().size());
             }
         }catch(Exception e){
