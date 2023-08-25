@@ -83,8 +83,7 @@ public class SetAndWaitLACTest{
             {-1   , "3 2 4"  , null                   , watcher , false , Level.TRACE , false    }, 
             {0    , "3 2 4"  , null                   , watcher , true  , Level.INFO  , false    },
             {1    , "3 2 4"  , "NullPointerException" , null    , true  , Level.INFO  , false    },
-            //{0    , ""       , null                   , watcher , false , Level.INFO  , true     },
-            //{null , null     , null                   , watcher , false , Level.TRACE , true     },
+            {0    , ""       , null                   , watcher , false , Level.INFO  , true     },
         });
     }
 
@@ -101,8 +100,11 @@ public class SetAndWaitLACTest{
 /*Nel setup viene creato l'oggetto FileInfo.*/
     @Before
     public void setUp() throws Exception {
+
+                            System.out.println("print0.0");
+
         Configurator.setLevel("org.apache.bookkeeper.bookie.FileInfo", logStatus);
-        byte[] mk = Variables.MASTER_KEY.getBytes();;
+        byte[] mk = Variables.MASTER_KEY.getBytes();
         fl = new File(Variables.LEDGER_FILE_INDEX);
         int ver = Variables.VERSION;
 
@@ -110,6 +112,7 @@ public class SetAndWaitLACTest{
         LOG = LoggerFactory.getLogger(FileInfo.class);
         LOG_SPY = spy(LOG);
         Utilities.setFinalStatic(FileInfo.class.getDeclaredField("LOG"), LOG_SPY);
+                    System.out.println("print3");
 
         fi = new FileInfo(fl, mk, ver);   
          
@@ -127,7 +130,6 @@ public class SetAndWaitLACTest{
     public void expBuilding(){
         parsed = new ArrayList<Long>();
         exp = new ArrayList<Long>();
-
         parsed = new ArrayList<Long>();
         String[] lacList = lacStr.split(" ");
         for(String i : lacList){
@@ -173,7 +175,6 @@ public class SetAndWaitLACTest{
             if(logStatus.equals(Level.TRACE)){
                 verify(LOG_SPY).trace("Wait For LAC {} , {}", exp.get(exp.size()-1), prevLac);
             }
-
         }catch(Exception e){    
             Assert.assertEquals(exception, e.getClass().getSimpleName());
         }

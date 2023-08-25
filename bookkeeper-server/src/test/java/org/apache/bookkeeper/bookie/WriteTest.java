@@ -35,6 +35,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.mockito.Answers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
@@ -45,21 +46,15 @@ import io.netty.buffer.Unpooled;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @RunWith(value=Parameterized.class)
-public class ReadWriteMoveTest{
+public class WriteTest{
     private FileInfo fi;
-    private String path = "testsFiles/moveFile";
-    private String exception;
     private File fl = new File(Variables.LEDGER_FILE_INDEX);
-    private File moveFile = new File(path);
     private String magic = "BKLE";
     private String key;
     private int version;
     private int headerMKLen;
     private boolean del;
     private static final int fileLen = 1000;
-    private int start;
-    private int toSum;
-    private boolean bestEffort;
     private ByteBuffer bb;
     private ByteBuffer[] writeBbArray;
     private long exp;
@@ -67,37 +62,33 @@ public class ReadWriteMoveTest{
     private int wBbSize;
     private Integer writeBuffArray;
     private String wExcept;
-    private boolean exists;
-    private long size;
-    private String mException;
     private int explicitLacBufLength = 0;
+    private FileChannel fc;
+    private FileChannel fc_spy;
+    private boolean nullWrite;
+
 
     @Parameters
     public static Collection<Object[]> getTestParameters(){
         return Arrays.asList(new Object[][]{
-//          | exception                  | start     | bbSize  | bestEffort | writeBuffArray | writePos | wBbSize       | wExcept                          | exists | size      | mException |
-            { "IllegalArgumentException" , -1025     , -1      , true       , 1              , -1025    , -1025-fileLen , "IllegalArgumentException"       , false  , 100       , null       }, 
-            { null                       , fileLen+1 , -1      , true       , null           , 0        , 0             , "NullPointerException"           , true   , 0         , null       },    
-            { null                       , -1024     , 0       , true       , 0              , 0        , 0             , "ArrayIndexOutOfBoundsException" , true   , 1         , null       },
-            { "ShortReadException"       , -1024     , 0       , false      , 1              , 0         , 0             , "ShortWriteException"           , true  , fileLen+1 , null        }, 
-            { null                       , -1024     , -1      , true       , 1              , 0         , fileLen       , null                            , true  , fileLen+1 , null        },
-            { null                       , fileLen   , +1      , true       , 1              , 0         , fileLen+1     , null                            , true  , fileLen+1 , null         },  
-            { "ShortReadException"       , fileLen   , +1      , false      , 1              , fileLen+1 , 1             , null                            , true  , fileLen+1 , null         },   
-        });
+//          | writeBuffArray | writePos  | wBbSize        | nullWrite | wExcept                          |
+            { 1              , -1025     , -1025-fileLen , false      , "IllegalArgumentException"       }, 
+            { null           , 0         , 0             , false      , "NullPointerException"           },    
+            { 0              , 0         , 0             , false      , "ArrayIndexOutOfBoundsException" },
+            { 1              , 0         , 0             , false      , "ShortWriteException"            }, 
+            { 1              , 0         , fileLen       , false      , null                             },
+            { 1              , 0         , fileLen+1     , false      , null                             },  
+            { 1              , fileLen+1 , 1             , false      , null                             },   
+            { 1              , fileLen+1 , 0             , true       , "IOException"                    },           
+        }); 
     }
 
-    public ReadWriteMoveTest(String exception, int start, int toSum, boolean bestEffort, Integer writeBuffArray, long writePos, int wBbSize, String wExcept, boolean exists, long size, String mException){
-        this.exception = exception;
-        this.start = start;
-        this.toSum = toSum;
-        this.bestEffort = bestEffort;
+    public WriteTest(Integer writeBuffArray, long writePos, int wBbSize, boolean nullWrite, String wExcept){
         this.writePos = writePos;
         this.wBbSize = wBbSize;
         this.wExcept = wExcept;
         this.writeBuffArray = writeBuffArray;
-        this.exists = exists;
-        this.size = size;
-        this.mException = mException;
+        this.nullWrite = nullWrite;
     }
 
 /*Nel setup viene creato l'oggetto FileInfo.*/
@@ -115,16 +106,11 @@ public class ReadWriteMoveTest{
 
         Utilities.createFile(fl, Variables.MASTER_KEY, magic, 1, Variables.MASTER_KEY.length(), explicitLacBufLength, 0, lac_byte);
         Utilities.writeOnFile(fileLen, fl);
-        //Viene creato il bytebuffer di input della giusta dimensione
-        bb = ByteBuffer.allocate((Math.abs(start-fileLen)+toSum));
-        bb.rewind();
-        //Viene assegnato il valore atteso in caso di successo
-        exp = Math.min(Math.abs(start-fileLen), bb.capacity());
-        
+
     }
 
     @Before
-    public void writeSetUp(){
+    public void writeSetUp() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException{
         if(writeBuffArray != null){
             writeBbArray = new ByteBuffer[(int) writeBuffArray];
             if(writeBuffArray > 0){
@@ -138,30 +124,20 @@ public class ReadWriteMoveTest{
                 writeBbArray[0].rewind();
             }
         } 
-    }
-
-    @Before
-    public void moveSetUp() throws IOException{
-        if(exists){
-            moveFile.createNewFile();
+        //Spy del file channel per far ritornare la write zero
+        if(nullWrite){
+            fc = new RandomAccessFile(fl, "rw").getChannel();
+            fc_spy = spy(fc);
+            Mockito.when(fc_spy.write(writeBbArray)).thenReturn(0L);
+            Utilities.setPrivate(fi, fc_spy, "fc");
         }
+
     }
 
     @After
     public void onClose(){
         File myObj = new File(Variables.LEDGER_FILE_INDEX); 
         myObj.delete();
-        File myObj1 = new File(path); 
-        myObj1.delete();
-    }
-    @Test
-    public void readHeaderTest(){
-        try{
-            long ret = fi.read(bb, start, bestEffort);
-            Assert.assertEquals(exp, ret);
-        }catch(Exception e){    
-            Assert.assertEquals(exception, e.getClass().getSimpleName());
-        }
     }
 
     @Test
@@ -172,18 +148,6 @@ public class ReadWriteMoveTest{
             Assert.assertEquals(Math.max(fileLen+1024, writePos+wBbSize+1024), fl.length());
         }catch(Exception e){    
             Assert.assertEquals(wExcept, e.getClass().getSimpleName());
-        }
-    }
-
-    @Test
-    public void moveTest(){
-        try{
-            fi.moveToNewLocation(moveFile, size);
-            assertTrue(moveFile.exists());
-            Assert.assertEquals(Math.min(size, 1024+fileLen), moveFile.length());
-        }catch(Exception e){ 
-            e.printStackTrace();   
-            Assert.assertEquals(mException, e.getClass().getSimpleName());
         }
     }
 }
