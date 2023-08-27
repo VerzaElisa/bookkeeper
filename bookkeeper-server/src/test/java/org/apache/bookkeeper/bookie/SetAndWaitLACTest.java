@@ -100,9 +100,6 @@ public class SetAndWaitLACTest{
 /*Nel setup viene creato l'oggetto FileInfo.*/
     @Before
     public void setUp() throws Exception {
-
-                            System.out.println("print0.0");
-
         Configurator.setLevel("org.apache.bookkeeper.bookie.FileInfo", logStatus);
         byte[] mk = Variables.MASTER_KEY.getBytes();
         fl = new File(Variables.LEDGER_FILE_INDEX);
@@ -112,8 +109,6 @@ public class SetAndWaitLACTest{
         LOG = LoggerFactory.getLogger(FileInfo.class);
         LOG_SPY = spy(LOG);
         Utilities.setFinalStatic(FileInfo.class.getDeclaredField("LOG"), LOG_SPY);
-                    System.out.println("print3");
-
         fi = new FileInfo(fl, mk, ver);   
          
         //Creazione lista invocazioni successive di setLasAddConfirmed

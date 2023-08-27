@@ -167,7 +167,6 @@ public class NewEnsembleTest {
         }
 
         obList = new ArrayList<BookieId>(oldBookies);
-        //System.out.println(obList);
     }
 
     @After

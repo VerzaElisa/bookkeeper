@@ -79,7 +79,7 @@ public class WriteTest{
             { 1              , 0         , fileLen       , false      , null                             },
             { 1              , 0         , fileLen+1     , false      , null                             },  
             { 1              , fileLen+1 , 1             , false      , null                             },   
-            { 1              , fileLen+1 , 0             , true       , "IOException"                    },           
+            { 1              , fileLen+1 , 3             , true       , "IOException"                    },           
         }); 
     }
 
@@ -130,6 +130,7 @@ public class WriteTest{
             fc_spy = spy(fc);
             Mockito.when(fc_spy.write(writeBbArray)).thenReturn(0L);
             Utilities.setPrivate(fi, fc_spy, "fc");
+            writeBbArray[0].rewind();
         }
 
     }
