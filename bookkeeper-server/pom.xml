@@ -342,13 +342,21 @@
             <version>${pitest.version}</version>
             <configuration>
               <targetClasses>
-                <!-- param>org.apache.bookkeeper.bookie.BufferedChannel</param -->
+                <param>org.apache.bookkeeper.bookie.FileInfo</param>
                 <param>org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy</param>
               </targetClasses>
               <targetTests>
                 <param>org.apache.bookkeeper.client.ReplaceBookieTest</param>
                 <param>org.apache.bookkeeper.client.OnClusterChangeTest</param>
                 <param>org.apache.bookkeeper.client.NewEnsembleTest</param>
+                <param>org.apache.bookkeeper.bookie.CheckOpenTest</param>
+                <param>org.apache.bookkeeper.bookie.HeaderTest</param>
+                <param>org.apache.bookkeeper.bookie.MoveToNewLocationTest</param>
+                <param>org.apache.bookkeeper.bookie.ReadTest</param>
+                <param>org.apache.bookkeeper.bookie.SetAndGetExplicitLACTest</param>
+                <param>org.apache.bookkeeper.bookie.SetLastAddConfirmedTest</param>
+                <param>org.apache.bookkeeper.bookie.SetAndWaitLACTest</param>
+                <param>org.apache.bookkeeper.bookie.WriteTest</param>
               </targetTests>
               <avoidCallsTo>
                 <avoidCallsTo>org.slf4j</avoidCallsTo>

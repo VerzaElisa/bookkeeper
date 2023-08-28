@@ -119,9 +119,9 @@ public class SetAndGetExplicitLACTest{
 
     @Test
     public void SAndGExplicitLACTest() throws IOException, IllegalArgumentException, IllegalAccessException {
+        ByteBuf ret = fi.getExplicitLac();
         if(!full){
-            ByteBuf ret = fi.getExplicitLac();
-            Assert.assertEquals(null, ret);
+            Assert.assertNull(ret);
             verify(LOG_SPY).debug("fileInfo:GetLac: {}", isNull);
         }
         try{

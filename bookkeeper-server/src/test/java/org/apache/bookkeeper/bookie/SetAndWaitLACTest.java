@@ -138,6 +138,7 @@ public class SetAndWaitLACTest{
                 cur = Math.max(strToLong, cur);
                 exp.add(cur);
             }
+            System.out.println(exp);
         }
         //Valore di ritorno per il test su waitForLastAddConfirmedUpdate
         prevLac = cur;
