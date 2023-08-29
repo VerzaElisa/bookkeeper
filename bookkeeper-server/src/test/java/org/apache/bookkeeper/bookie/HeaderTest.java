@@ -60,6 +60,7 @@ public class HeaderTest{
     private Field explicitLacField;
     private ByteBuffer ret = null;
     private int full;
+    private Field mkField;
 
 
 
@@ -81,6 +82,8 @@ public class HeaderTest{
             { "IOException"              , "BKLE" , "abcd" , 1      , 4           , false , 1                   , false       , 0    },
             { "IOException"              , "BKLE" , "abcd" , 1      , 4           , false , -1                  , false       , 0    },
             { null                       , "BKLE" , "abcd" , 1      , 4           , false , 0                   , true        , 0    },
+            { null                       , "BKLE" , ""     , 1      , 0           , false , 16                  , false       , 0    },
+            { "BufferUnderflowException" , "BKLE" , "abcd" , 1      , 28          , false , 16                  , false       , 0    },
 
         });
     }
@@ -103,6 +106,10 @@ public class HeaderTest{
         byte[] mk = Variables.MASTER_KEY.getBytes();
         int ver = Variables.VERSION;
         fi = new FileInfo(fl, mk, ver);
+
+        //Rendo accessibile la master key
+        mkField = fi.getClass().getDeclaredField("masterKey");
+        mkField.setAccessible(true);
 
         //Viene reso accessibile il campo explicitLac
         explicitLacField = fi.getClass().getDeclaredField("explicitLac");
@@ -141,7 +148,7 @@ public class HeaderTest{
         myObj.delete();
     }
     @Test
-    public void readHeaderTest(){
+    public void readHeaderTest() throws IllegalArgumentException, IllegalAccessException{
         try{
             fi.readHeader();
             if(fileChannel){
@@ -149,6 +156,10 @@ public class HeaderTest{
             }
             Assert.assertEquals(ret, explicitLacField.get(fi));
         }catch(Exception e){    
+            if(headerMKLen == 28){
+                byte[] len = (byte[])mkField.get(fi);
+                Assert.assertEquals(headerMKLen, len.length);
+            }
             Assert.assertEquals(exception, e.getClass().getSimpleName());
         }
     }

@@ -69,7 +69,9 @@ public class Utilities {
                 headerBB.putInt(signature);
                 headerBB.putInt(version);
                 headerBB.putInt(headerMKLen);
-                headerBB.put(headerMK);
+                if(headerMKLen!=0){
+                    headerBB.put(headerMK);
+                }
                 headerBB.putInt(stateBits);
                 headerBB.putInt(explicitLacBufLength);
                 headerBB.put(lac_byte);

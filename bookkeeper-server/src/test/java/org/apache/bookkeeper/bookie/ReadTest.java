@@ -12,6 +12,9 @@ import org.junit.runners.Parameterized.Parameters;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -59,24 +62,30 @@ public class ReadTest{
     private int toSum;
     private boolean bestEffort;
     private ByteBuffer bb;
+
     private ByteBuffer[] writeBbArray;
     private long exp;
     private int explicitLacBufLength = 0;
     private  boolean fileExists;
+    private FileChannel fc;
+    private FileChannel fc_spy;
+
 
     @Parameters
     public static Collection<Object[]> getTestParameters(){
         return Arrays.asList(new Object[][]{
-//          | exception                  | start     | bbSize  | bestEffort | fileExists |
+//          | exception                  | start     | toSum   | bestEffort | fileExists |
             { "IllegalArgumentException" , -1025     , -1      , true       , true       }, 
-            { null                       , fileLen+1 , -1      , true       , true       },    
+            { null                       , fileLen+1 , 0       , true       , true       },    
             { null                       , -1024     , 0       , true       , true       },
             { "ShortReadException"       , -1024     , 0       , false      , true       }, 
             { null                       , -1024     , -1      , true       , true       },
             { null                       , fileLen   , +1      , true       , true       },  
             { "ShortReadException"       , fileLen   , +1      , false      , true       },   
             { null                       , fileLen+1 , -1      , true       , false      },    
+            { null                       , -1024     , -2024   , true       , true       },
 
+            {null                        , 0         , 1025    , true       , true       }
         }); 
     }
 
@@ -94,6 +103,11 @@ public class ReadTest{
         byte[] mk = Variables.MASTER_KEY.getBytes();
         int ver = Variables.VERSION;
         fi = new FileInfo(fl, mk, ver);
+        //Viene reso accessibile il file channel
+        fc = new RandomAccessFile(fl, "rw").getChannel();
+        fc_spy = spy(fc);
+        Utilities.setPrivate(fi, fc_spy, "fc");
+
         //Viene scritto l'header e il contenuto randomico del file
         if(fileExists){
             ByteBuffer lac = Utilities.bbCreator(0L, 100L, Math.abs(explicitLacBufLength)).nioBuffer();
@@ -110,7 +124,7 @@ public class ReadTest{
         bb.rewind();
         //Viene assegnato il valore atteso in caso di successo
         exp = Math.min(Math.abs(start-fileLen), bb.capacity());
-        if(!fileExists){
+        if(!fileExists || start>fileLen){
             exp = 0;
         }
     }
@@ -124,6 +138,9 @@ public class ReadTest{
     public void readTest(){
         try{
             long ret = fi.read(bb, start, bestEffort);
+            if(toSum == -2024){
+                verify(fc_spy, times(0)).read(any(ByteBuffer.class), anyLong());
+            }
             Assert.assertEquals(exp, ret);
         }catch(Exception e){    
             Assert.assertEquals(exception, e.getClass().getSimpleName());
