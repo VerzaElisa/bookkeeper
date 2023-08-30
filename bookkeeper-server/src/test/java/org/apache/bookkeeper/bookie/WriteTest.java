@@ -50,7 +50,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @RunWith(value=Parameterized.class)
 public class WriteTest{
     private FileInfo fi;
-    private File fl = new File(Variables.LEDGER_FILE_INDEX);
+    private File fl = new File(Variables.TEST_FOLDER+"/"+Variables.LEDGER_FILE_INDEX);
     private String magic = "BKLE";
     private String key;
     private int version;
@@ -101,6 +101,7 @@ public class WriteTest{
 /*Nel setup viene creato l'oggetto FileInfo.*/
     @Before
     public void setUp() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchAlgorithmException {
+        Utilities.createDirectory(Variables.TEST_FOLDER);
         Configurator.setLevel("org.apache.bookkeeper.bookie.FileInfo", Level.TRACE);
         byte[] mk = Variables.MASTER_KEY.getBytes();
         int ver = Variables.VERSION;
@@ -154,8 +155,8 @@ public class WriteTest{
 
     @After
     public void onClose(){
-        File myObj = new File(Variables.LEDGER_FILE_INDEX); 
-        myObj.delete();
+        File parent = new File(Variables.TEST_FOLDER); 
+        Utilities.deleteDirectory(parent);
     }
 
     @Test

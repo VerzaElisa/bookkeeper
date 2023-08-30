@@ -47,7 +47,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class HeaderTest{
     private FileInfo fi;
     private String exception;
-    private File fl = new File(Variables.LEDGER_FILE_INDEX);
+    private File fl = new File(Variables.TEST_FOLDER+"/"+Variables.LEDGER_FILE_INDEX);
     private String magic;
     private String key;
     private int version;
@@ -103,6 +103,7 @@ public class HeaderTest{
 /*Nel setup viene creato l'oggetto FileInfo.*/
     @Before
     public void setUp() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+        Utilities.createDirectory(Variables.TEST_FOLDER);
         byte[] mk = Variables.MASTER_KEY.getBytes();
         int ver = Variables.VERSION;
         fi = new FileInfo(fl, mk, ver);
@@ -144,8 +145,8 @@ public class HeaderTest{
     }
     @After
     public void onClose(){
-        File myObj = new File(Variables.LEDGER_FILE_INDEX); 
-        myObj.delete();
+        File parent = new File(Variables.TEST_FOLDER); 
+        Utilities.deleteDirectory(parent);
     }
     @Test
     public void readHeaderTest() throws IllegalArgumentException, IllegalAccessException{

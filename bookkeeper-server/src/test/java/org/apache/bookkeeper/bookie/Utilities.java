@@ -1,8 +1,10 @@
 package org.apache.bookkeeper.bookie;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -22,6 +24,23 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 public class Utilities {
+
+    public static boolean deleteDirectory(File directoryToBeDeleted) {
+        File[] allContents = directoryToBeDeleted.listFiles();
+        if (allContents != null) {
+            for (File file : allContents) {
+                deleteDirectory(file);
+            }
+        }
+        return directoryToBeDeleted.delete();
+    }
+
+    public static void createDirectory(String name){
+        File dir = new File(name);
+        if(!dir.exists()){
+            dir.mkdir();
+        }
+    }
     
     public static void setFinalStatic(Field field, Object newValue) throws Exception {
         field.setAccessible(true);        

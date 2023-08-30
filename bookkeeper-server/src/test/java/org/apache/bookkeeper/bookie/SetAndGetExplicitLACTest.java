@@ -51,7 +51,7 @@ public class SetAndGetExplicitLACTest{
     private FileInfo fi;
     private String exception;
     private int byteBuffLen;
-    private File fl = new File(Variables.LEDGER_FILE_INDEX);
+    private File fl = new File(Variables.TEST_FOLDER+"/"+Variables.LEDGER_FILE_INDEX);
     private ByteBuffer bb;
     private Field explicitLacField;
     private ByteBuf retLac;
@@ -113,8 +113,8 @@ public class SetAndGetExplicitLACTest{
 
     @After
     public void onClose(){
-        File myObj = new File(Variables.LEDGER_FILE_INDEX); 
-        myObj.delete();
+        File parent = new File(Variables.TEST_FOLDER); 
+        Utilities.deleteDirectory(parent);
     }
 
     @Test

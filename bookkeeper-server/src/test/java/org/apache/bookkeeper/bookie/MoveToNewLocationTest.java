@@ -1,7 +1,5 @@
 package org.apache.bookkeeper.bookie;
 
-import org.apache.bookkeeper.common.util.Watcher;
-import org.apache.bookkeeper.net.BookieId;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -9,59 +7,32 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import static org.junit.Assert.assertEquals;
+
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.WritableByteChannel;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
 
-import org.mockito.Answers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @RunWith(value=Parameterized.class)
 public class MoveToNewLocationTest{
     private FileInfo fi;
-    private static String path = "testsFiles/moveFile";
-    private static String def_path = "testsFiles/moveFile.rloc";
-    private File fl = new File(Variables.LEDGER_FILE_INDEX);
+    private static String path = Variables.RLOC_FOLDER+"/moveFile";
+    private static String def_path = Variables.RLOC_FOLDER+"/moveFile.rloc";
+    private File fl = new File(Variables.TEST_FOLDER+"/"+Variables.LEDGER_FILE_INDEX);
     private File moveFile;
     private String magic = "BKLE";
-    private String key;
-    private int version;
-    private int headerMKLen;
-    private boolean del;
     private static final int fileLen = 1000;
-    private ByteBuffer bb;
-    private ByteBuffer[] writeBbArray;
-    private long exp;
     private boolean exists;
     private long size;
     private String mException;
@@ -73,23 +44,24 @@ public class MoveToNewLocationTest{
     private FileChannel fc_spy;
     private File moveFileRloc;
     private boolean delete;
+    private int times = 1;
 
 
     @Parameters
     public static Collection<Object[]> getTestParameters(){
         return Arrays.asList(new Object[][]{
-//          | exists | size           | mException  | fileName                    | fileChannel | delete |
-            { false  , 100            , null          , path                        , true      , true   }, 
-            { true   , 0              , null          , path                        , true      , true   },    
-            { true   , 1              , null          , path                        , true      , true   },
-            { true   , 1024+fileLen+1 , null          , path                        , true      , true   }, 
-            { true   , 1024+fileLen+1 , null          , path                        , true      , true   },
-            { true   , 1024+fileLen+1 , null          , path                        , true      , true   },  
-            { true   , 1024+fileLen+1 , null          , path                        , true      , true   }, 
-            { false  , fileLen-1      , null          , Variables.LEDGER_FILE_INDEX , true      , true   }, 
-            { true   , fileLen        , null          , path                        , false     , true   },
-            { true   , fileLen        , "IOException" , path                        , true      , true   },  
-            { true   , 1024+fileLen+1 , "IOException" , path                        , true      , false  }, 
+//          | exists | size           | mException  | fileName                                                | fileChannel | delete |
+            { false  , 100            , null          , path                                                  , true        , true   }, 
+            { true   , 0              , null          , path                                                  , true      , true   },    
+            { true   , 1              , null          , path                                                  , true      , true   },
+            { true   , 1024+fileLen+1 , null          , path                                                  , true      , true   }, 
+            { true   , 1024+fileLen+1 , null          , path                                                  , true      , true   },
+            { true   , 1024+fileLen+1 , null          , path                                                  , true      , true   },  
+            { true   , 1024+fileLen+1 , null          , path                                                  , true      , true   }, 
+            { false  , fileLen-1      , null          , Variables.TEST_FOLDER+"/"+Variables.LEDGER_FILE_INDEX , true      , true   }, 
+            { true   , fileLen        , null          , path                                                  , false     , true   },
+            { true   , fileLen        , "IOException" , path                                                  , true      , true   },  
+            { true   , 1024+fileLen+1 , "IOException" , path                                                  , true      , false  }, 
 
         }); 
     }
@@ -106,8 +78,9 @@ public class MoveToNewLocationTest{
 /*Nel setup viene creato l'oggetto FileInfo.*/
     @Before
     public void setUp() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchAlgorithmException {
+
         ret = size;
-        if(fileName.equals(Variables.LEDGER_FILE_INDEX)){
+        if(fileName.equals(Variables.TEST_FOLDER+"/"+Variables.LEDGER_FILE_INDEX)){
             ret = 1024+fileLen;
         }
         moveFile = new File(fileName);
@@ -121,9 +94,10 @@ public class MoveToNewLocationTest{
 
         //Effettuata la spy del file channel
         if(mException!=null && mException.equals("IOException") && delete && fileName != def_path){
+            Utilities.createDirectory(Variables.TEST_FOLDER);
             fc = new RandomAccessFile(fl, "rw").getChannel();
             fc_spy = spy(fc);
-            Mockito.doReturn(-1L).when(fc_spy).transferTo(Mockito.anyLong(), Mockito.anyLong(), Mockito.any(FileChannel.class));
+            Mockito.doReturn(0L).when(fc_spy).transferTo(Mockito.anyLong(), Mockito.anyLong(), Mockito.any(FileChannel.class));
             Utilities.setPrivate(fi, fc_spy, "fc");
         }
         if(fileChannel){
@@ -133,29 +107,29 @@ public class MoveToNewLocationTest{
             byte[] lac_byte = new byte[lac.remaining()];
             lac.get(lac_byte);
             lac.rewind();
-
+            Utilities.createDirectory(Variables.TEST_FOLDER);
             Utilities.createFile(fl, Variables.MASTER_KEY, magic, 1, Variables.MASTER_KEY.length(), explicitLacBufLength, 0, lac_byte);
             Utilities.writeOnFile(fileLen, fl);
         }else{
             File myObj = new File(Variables.LEDGER_FILE_INDEX); 
             myObj.delete();
             ret = 0;
+            times = 0;
         }
         if(exists){
+            Utilities.createDirectory(Variables.RLOC_FOLDER);
             moveFileRloc = new File(def_path);
             moveFile.createNewFile();
             moveFileRloc.createNewFile();
+        }else{
+            Utilities.deleteDirectory(new File(Variables.RLOC_FOLDER));
         }
     }
 
     @After
     public void onClose(){
-        File myObj = new File(Variables.LEDGER_FILE_INDEX); 
-        myObj.delete();
-        File myObj1 = new File(fileName); 
-        myObj1.delete();
-        File myObj2 = new File(def_path); 
-        myObj2.delete();
+        Utilities.deleteDirectory(new File(Variables.TEST_FOLDER)); 
+        Utilities.deleteDirectory(new File(Variables.RLOC_FOLDER)); 
     }
 
     @Test
