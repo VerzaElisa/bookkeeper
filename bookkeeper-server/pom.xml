@@ -353,6 +353,7 @@
                 <param>org.apache.bookkeeper.bookie.HeaderTest</param>
                 <param>org.apache.bookkeeper.bookie.MoveToNewLocationTest</param>
                 <param>org.apache.bookkeeper.bookie.ReadTest</param>
+                <param>org.apache.bookkeeper.bookie.ReadCheckTest</param>
                 <param>org.apache.bookkeeper.bookie.SetAndGetExplicitLACTest</param>
                 <param>org.apache.bookkeeper.bookie.SetLastAddConfirmedTest</param>
                 <param>org.apache.bookkeeper.bookie.SetAndWaitLACTest</param>

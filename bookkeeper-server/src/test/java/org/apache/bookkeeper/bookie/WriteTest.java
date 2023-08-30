@@ -2,6 +2,8 @@ package org.apache.bookkeeper.bookie;
 
 import org.apache.bookkeeper.common.util.Watcher;
 import org.apache.bookkeeper.net.BookieId;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -66,34 +68,40 @@ public class WriteTest{
     private FileChannel fc;
     private FileChannel fc_spy;
     private boolean nullWrite;
+    private Field sizeField;
+    private boolean fcExists;
+    private long size;
 
 
     @Parameters
     public static Collection<Object[]> getTestParameters(){
         return Arrays.asList(new Object[][]{
-//          | writeBuffArray | writePos  | wBbSize        | nullWrite | wExcept                          |
-            { 1              , -1025     , -1025-fileLen , false      , "IllegalArgumentException"       }, 
-            { null           , 0         , 0             , false      , "NullPointerException"           },    
-            { 0              , 0         , 0             , false      , "ArrayIndexOutOfBoundsException" },
-            { 1              , 0         , 0             , false      , "ShortWriteException"            }, 
-            { 1              , 0         , fileLen       , false      , null                             },
-            { 1              , 0         , fileLen+1     , false      , null                             },  
-            { 1              , fileLen+1 , 1             , false      , null                             },   
-            { 1              , fileLen+1 , 3             , true       , "IOException"                    },           
+//          | writeBuffArray | writePos  | wBbSize        | nullWrite | wExcept                          | fcExists | size |
+            { 1              , -1025     , -1025-fileLen , false      , "IllegalArgumentException"       , false    , 2024}, 
+            { null           , 0         , 0             , false      , "NullPointerException"           , true     , 1024},    
+            { 0              , 0         , 0             , false      , "ArrayIndexOutOfBoundsException" , true     , 1024},
+            { 1              , 0         , 0             , false      , "ShortWriteException"            , true     , 1024}, 
+            { 1              , 0         , fileLen       , false      , null                             , true     , 2024},
+            { 1              , 0         , fileLen+1     , false      , null                             , true     , 2025},  
+            { 1              , fileLen+1 , 1             , false      , null                             , true     , 2026},   
+            { 1              , fileLen+1 , 3             , true       , "IOException"                    , true     , 2025},           
         }); 
     }
 
-    public WriteTest(Integer writeBuffArray, long writePos, int wBbSize, boolean nullWrite, String wExcept){
+    public WriteTest(Integer writeBuffArray, long writePos, int wBbSize, boolean nullWrite, String wExcept, boolean fcExists, long size){
         this.writePos = writePos;
         this.wBbSize = wBbSize;
         this.wExcept = wExcept;
         this.writeBuffArray = writeBuffArray;
         this.nullWrite = nullWrite;
+        this.fcExists = fcExists;
+        this.size = size;
     }
 
 /*Nel setup viene creato l'oggetto FileInfo.*/
     @Before
     public void setUp() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchAlgorithmException {
+        Configurator.setLevel("org.apache.bookkeeper.bookie.FileInfo", Level.TRACE);
         byte[] mk = Variables.MASTER_KEY.getBytes();
         int ver = Variables.VERSION;
         fi = new FileInfo(fl, mk, ver);
@@ -124,14 +132,23 @@ public class WriteTest{
                 writeBbArray[0].rewind();
             }
         } 
-        //Spy del file channel per far ritornare la write zero
-        if(nullWrite){
+        //Viene resa accessibile la variabile size per i test
+        sizeField = fi.getClass().getDeclaredField("size");
+        sizeField.setAccessible(true);
+        if(fcExists){
+            //Spy del file channel per far ritornare la write zero
             fc = new RandomAccessFile(fl, "rw").getChannel();
             fc_spy = spy(fc);
-            Mockito.when(fc_spy.write(writeBbArray)).thenReturn(0L);
             Utilities.setPrivate(fi, fc_spy, "fc");
-            writeBbArray[0].rewind();
+
+
         }
+        if(nullWrite){
+            Mockito.when(fc_spy.write(writeBbArray)).thenReturn(0L);
+            writeBbArray[0].rewind();
+            Utilities.setPrivate(fi, fc_spy, "fc");
+        }
+
 
     }
 
@@ -142,12 +159,15 @@ public class WriteTest{
     }
 
     @Test
-    public void writeTest(){
+    public void writeTest() throws IllegalArgumentException, IllegalAccessException{
          try{
             long ret = fi.write(writeBbArray, writePos);
             Assert.assertEquals(wBbSize, ret);
             Assert.assertEquals(Math.max(fileLen+1024, writePos+wBbSize+1024), fl.length());
+            Mockito.verify(fc_spy).force(true);
+            Assert.assertEquals(size, sizeField.get(fi));
         }catch(Exception e){    
+            Assert.assertEquals(size, sizeField.get(fi));
             Assert.assertEquals(wExcept, e.getClass().getSimpleName());
         }
     }
