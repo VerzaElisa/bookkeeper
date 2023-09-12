@@ -16,9 +16,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import org.apache.bookkeeper.net.BookieId;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,9 +34,7 @@ import java.lang.reflect.Field;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.mockito.Answers;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 
 
 @RunWith(value=Parameterized.class)
@@ -58,7 +54,6 @@ public class NewEnsembleTest {
     private String throwEx;
     private PlacementPolicyAdherence ppa;
     private DefaultEnsemblePlacementPolicy dEpp;
-    private ReentrantReadWriteLock rwLock;
     private ReentrantReadWriteLock rwLockMock;
     private ReadLock readLockMock;
     private Integer t = 1;

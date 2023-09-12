@@ -1,12 +1,8 @@
 package org.apache.bookkeeper.bookie;
 
 import org.apache.bookkeeper.common.util.Watcher;
-import org.apache.bookkeeper.net.BookieId;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.appender.FileAppender;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -15,34 +11,18 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import org.mockito.Answers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.SubstituteLoggingEvent;
-import org.slf4j.impl.StaticLoggerBinder;
 import org.slf4j.Logger;
-import org.slf4j.event.LoggingEvent;
 
 
 
@@ -50,14 +30,6 @@ import org.slf4j.event.LoggingEvent;
 public class SetAndWaitLACTest{
     private FileInfo fi;
     private File fl;
-    private boolean fileExists;
-    private Integer signature;
-    private Integer version;
-    private Integer lacBufferLen;
-    private Integer overflow;
-    private int statebits;
-    private static byte[] headerMK = "SecondMK".getBytes();
-    private Integer headerMKLen;
     public int remaining;
 
     private long lac;
